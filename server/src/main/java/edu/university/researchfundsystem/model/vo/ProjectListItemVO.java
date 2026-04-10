@@ -1,0 +1,20 @@
+package edu.university.researchfundsystem.model.vo;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+@Data
+public class ProjectListItemVO {
+    private Long id;
+    private String projectName;
+    private String projectCode;
+    private Long principalId;
+    private String principalName;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private BigDecimal totalBudget;
+    private String status;
+    private String performance;
+}
