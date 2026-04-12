@@ -24,10 +24,17 @@ public class FundCategoryController {
     public Result<Long> save(@RequestBody FundCategory category) {
         boolean success = categoryService.save(category);
         if (success) {
-            return Result.success(category.getId()); // 返回新创建分类的ID
-        } else {
-            return Result.error("分类创建失败");
+            return Result.success(category.getId());
         }
+        return Result.error("分类创建失败");
+    }
+
+    @PutMapping("/update")
+    public Result<Boolean> update(@RequestBody FundCategory category) {
+        if (category.getId() == null) {
+            return Result.error("分类ID不能为空");
+        }
+        return Result.success(categoryService.updateById(category));
     }
 
     @DeleteMapping("/delete/{id}")

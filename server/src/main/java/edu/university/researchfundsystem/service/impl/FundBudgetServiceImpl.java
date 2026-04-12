@@ -29,6 +29,37 @@ public class FundBudgetServiceImpl extends ServiceImpl<FundBudgetMapper, FundBud
     private final ResearchProjectService projectService;
 
     @Override
+    public boolean save(FundBudget entity) {
+        validateBudgetLimit(entity);
+        return super.save(entity);
+    }
+
+    @Override
+    public boolean updateById(FundBudget entity) {
+        validateBudgetLimit(entity);
+        return super.updateById(entity);
+    }
+
+    private void validateBudgetLimit(FundBudget budget) {
+        ResearchProject project = projectService.getById(budget.getProjectId());
+        if (project == null || project.getTotalBudget() == null) return;
+
+        LambdaQueryWrapper<FundBudget> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(FundBudget::getProjectId, budget.getProjectId());
+        if (budget.getId() != null) {
+            queryWrapper.ne(FundBudget::getId, budget.getId());
+        }
+        List<FundBudget> otherBudgets = this.list(queryWrapper);
+        BigDecimal currentTotal = otherBudgets.stream()
+                .map(FundBudget::getBudgetAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (currentTotal.add(budget.getBudgetAmount()).compareTo(project.getTotalBudget()) > 0) {
+            throw new RuntimeException("预算超出项目总额限制 (上限: " + project.getTotalBudget() + ")");
+        }
+    }
+
+    @Override
     public List<BudgetListItemVO> listByProjectForView(Long projectId) {
         LambdaQueryWrapper<FundBudget> budgetWrapper = new LambdaQueryWrapper<>();
         budgetWrapper.eq(FundBudget::getProjectId, projectId);

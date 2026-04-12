@@ -14,6 +14,9 @@ public class ProjectDetailVO {
     private String projectCode;
     private String principalName;
     private String performance;
+    private Integer status;
+    private String statusText;
+    private String auditRemark;
     private List<MilestoneVO> milestones;
     private List<BudgetDetailVO> budgets;
     

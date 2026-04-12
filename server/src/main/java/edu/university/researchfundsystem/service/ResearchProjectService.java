@@ -11,4 +11,27 @@ public interface ResearchProjectService extends IService<ResearchProject> {
     List<ProjectListItemVO> listForView();
 
     ProjectDetailVO getProjectDetail(Long id);
+
+    /**
+     * 科研人员提交申请
+     * @param id 项目ID
+     * @return 是否成功
+     */
+    boolean submitProject(Long id);
+
+    /**
+     * 管理员审核项目
+     * @param id 项目ID
+     * @param status 审核后状态 (2: 通过, 3: 驳回)
+     * @param remark 审核意见
+     * @return 是否成功
+     */
+    /**
+     * 科研人员确认预算编制，启动项目执行 (状态从 2 变为 4)
+     * @param id 项目ID
+     * @return 是否成功
+     */
+    boolean confirmBudget(Long id);
+
+    boolean auditProject(Long id, Integer status, String auditRemark);
 }

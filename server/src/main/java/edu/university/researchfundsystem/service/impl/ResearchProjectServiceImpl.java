@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +56,7 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
             item.setTotalBudget(project.getTotalBudget());
             item.setStatus(calculateStatus(project));
             item.setPerformance(calculatePerformance(project.getId()));
+            item.setUpdateTime(project.getUpdateTime());
             return item;
         }).collect(Collectors.toList());
     }
@@ -128,8 +130,74 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
             budgetDetails.add(budgetDetail);
         }
         detail.setBudgets(budgetDetails);
+        
+        // 设置状态及审核信息
+        detail.setStatus(project.getStatus());
+        detail.setStatusText(calculateStatus(project));
+        detail.setAuditRemark(project.getAuditRemark());
 
         return detail;
+    }
+
+    @Override
+    public boolean submitProject(Long id) {
+        ResearchProject project = this.getById(id);
+        if (project == null) {
+            return false;
+        }
+        // 只有草稿(0)或已驳回(3)状态可以提交
+        if (project.getStatus() != null && project.getStatus() != 0 && project.getStatus() != 3) {
+            return false;
+        }
+        project.setStatus(1); // 变为待审核
+        project.setUpdateTime(LocalDateTime.now());
+        return this.updateById(project);
+    }
+
+    @Override
+    public boolean auditProject(Long id, Integer status, String remark) {
+        ResearchProject project = this.getById(id);
+        if (project == null) {
+            return false;
+        }
+        // 只有待审核(1)状态可以进行审核
+        if (project.getStatus() == null || project.getStatus() != 1) {
+            return false;
+        }
+        // 如果是审核通过(原本传2)，现在对应状态 2 (待编制)
+        // 如果是驳回(原本传3)，依然对应状态 3
+        project.setStatus(status);
+        project.setAuditRemark(remark);
+        project.setUpdateTime(LocalDateTime.now());
+        return this.updateById(project);
+    }
+
+    @Override
+    public boolean confirmBudget(Long id) {
+        ResearchProject project = this.getById(id);
+        if (project == null) {
+            return false;
+        }
+        // 只有“待编制预算(2)”状态可以确认并启动项目
+        if (project.getStatus() == null || project.getStatus() != 2) {
+            return false;
+        }
+
+        // 强校验：分项额度之和必须等于项目总额
+        LambdaQueryWrapper<FundBudget> budgetWrapper = new LambdaQueryWrapper<>();
+        budgetWrapper.eq(FundBudget::getProjectId, id);
+        List<FundBudget> budgets = budgetMapper.selectList(budgetWrapper);
+        BigDecimal allocatedTotal = budgets.stream()
+                .map(FundBudget::getBudgetAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (project.getTotalBudget() == null || allocatedTotal.compareTo(project.getTotalBudget()) != 0) {
+            throw new RuntimeException("预算分配不完整：项目总额为 " + project.getTotalBudget() + "，当前已分配 " + allocatedTotal);
+        }
+
+        project.setStatus(4); // 4 为执行中
+        project.setUpdateTime(LocalDateTime.now());
+        return this.updateById(project);
     }
 
     private Map<Long, String> buildPrincipalNameMap(List<ResearchProject> projects) {
@@ -167,14 +235,27 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
     }
 
     private String calculateStatus(ResearchProject project) {
-        LocalDate today = LocalDate.now();
-        if (project.getStartDate() != null && today.isBefore(project.getStartDate())) {
-            return "未开始";
+        Integer status = project.getStatus();
+        if (status == null || status == 0) {
+            return "未提交";
         }
-        if (project.getEndDate() != null && today.isAfter(project.getEndDate())) {
+        if (status == 1) {
+            return "待审核";
+        }
+        if (status == 2) {
+            return "待编制预算";
+        }
+        if (status == 3) {
+            return "已驳回";
+        }
+        if (status == 4) {
+            return "执行中";
+        }
+        if (status == 5) {
             return "已结题";
         }
-        return "进行中";
+
+        return "未知状态";
     }
 
     private String calculatePerformance(Long projectId) {
