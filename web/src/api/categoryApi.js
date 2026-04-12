@@ -8,6 +8,9 @@ export const categoryApi = {
   // 新增分类
   add: (data) => request.post('/categories/create', data),
   
+  // 修改分类
+  update: (data) => request.put('/categories/update', data),
+  
   // 删除分类
   delete: (id) => request.delete(`/categories/delete/${id}`)
 };

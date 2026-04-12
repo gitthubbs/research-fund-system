@@ -8,11 +8,16 @@ const ProjectsView = () => import('@/views/ProjectsView.vue')
 const ProjectDetailView = () => import('@/views/ProjectDetailView.vue')
 const BudgetsView = () => import('@/views/BudgetsView.vue')
 const ExpendituresView = () => import('@/views/ExpendituresView.vue')
-const UsersView = () => import('@/views/UsersView.vue')
-const LogsView = () => import('@/views/LogsView.vue')
-const ProfileView = () => import('@/views/ProfileView.vue')
-const WarningSettingsView = () => import('@/views/WarningSettingsView.vue')
+const ProjectManage = () => import('@/views/admin/ProjectManageView.vue')
+const ProjectList = () => import('@/views/researcher/ProjectListView.vue')
+const ProjectAdd = () => import('@/views/researcher/ProjectAddView.vue')
+const ProjectAudit = () => import('@/views/admin/ProjectAuditView.vue')
+const UsersView = () => import('@/views/admin/UsersView.vue')
+const LogsView = () => import('@/views/admin/LogsView.vue')
+const WarningSettingsView = () => import('@/views/admin/WarningSettingsView.vue')
+const CategoryManage = () => import('@/views/admin/CategoryManageView.vue')
 const ForbiddenView = () => import('@/views/ForbiddenView.vue')
+const ProfileView = () => import('@/views/ProfileView.vue')
 const NotFoundView = () => import('@/views/NotFoundView.vue')
 
 const routes = [
@@ -41,6 +46,24 @@ const routes = [
         name: 'project-detail',
         component: ProjectDetailView,
         meta: { title: '项目详情', roles: ['admin', 'researcher'], hiddenInMenu: true }
+      },
+      {
+        path: 'projects/add',
+        name: 'project-add',
+        component: ProjectAdd,
+        meta: { title: '新增项目', roles: ['researcher'], hiddenInMenu: true }
+      },
+      {
+        path: 'projects/audit',
+        name: 'project-audit',
+        component: ProjectAudit,
+        meta: { title: '项目审核', roles: ['admin'] }
+      },
+      {
+        path: 'categories',
+        name: 'categories',
+        component: CategoryManage,
+        meta: { title: '科目维护', roles: ['admin'], icon: 'Grid' }
       },
       {
         path: 'budgets',

@@ -35,12 +35,15 @@ onUnmounted(() => window.removeEventListener('resize', onResize))
 
 <style scoped>
 .layout-shell {
-  min-height: 100vh;
+  height: 100vh;
   background: #f0f2f5;
+  overflow: hidden;
 }
 
 .sidebar-wrap {
+  height: 100%;
   transition: width 0.25s ease;
+  overflow: hidden;
 }
 
 .layout-header {
@@ -49,10 +52,12 @@ onUnmounted(() => window.removeEventListener('resize', onResize))
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  z-index: 10;
 }
 
 .layout-main {
   padding: 24px;
+  overflow-y: auto;
   background:
     radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 25%),
     #f0f2f5;

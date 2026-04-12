@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElLoading } from 'element-plus'
+import { ElLoading, ElMessage } from 'element-plus'
 import { clearAuthSession, getToken } from '@/utils/auth'
 
 let loadingInstance = null
@@ -27,7 +27,6 @@ function endLoading() {
 const request = axios.create({
   baseURL: '/api',
   timeout: 10000
-  // 移除了模拟适配器，使用真实HTTP请求
 })
 
 request.interceptors.request.use(
@@ -49,10 +48,23 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (response) => {
     endLoading()
-    return response.data
+    const res = response.data
+    
+    // 如果返回 code 不为 200，说明是业务逻辑错误
+    if (res.code && res.code !== 200) {
+      ElMessage.error(res.message || '操作失败')
+      return Promise.reject(new Error(res.message || 'Error'))
+    }
+    
+    return res
   },
   (error) => {
     endLoading()
+    
+    // 处理 HTTP 错误
+    const msg = error.response?.data?.message || error.message || '网络连接异常'
+    ElMessage.error(msg)
+
     if (error?.response?.status === 401) {
       clearAuthSession()
     }

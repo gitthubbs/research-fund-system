@@ -39,7 +39,8 @@ import {
   Money,
   User,
   UserFilled,
-  Warning
+  Warning,
+  Grid
 } from '@element-plus/icons-vue'
 import { getUser } from '@/utils/auth'
 import { roleLabel } from '@/utils/format'
@@ -61,7 +62,8 @@ const iconMap = {
   UserFilled,
   Document,
   User,
-  Warning
+  Warning,
+  Grid
 }
 
 const user = computed(() => getUser() || { role: 'researcher' })
@@ -70,6 +72,8 @@ const menus = computed(() => {
   if (user.value.role === 'admin') {
     return [
       { path: '/projects', title: '项目管理', icon: iconMap.FolderOpened },
+      { path: '/projects/audit', title: '项目审核', icon: iconMap.Document },
+      { path: '/categories', title: '科目维护', icon: iconMap.Grid },
       { path: '/budgets', title: '预算管理', icon: iconMap.Money },
       { path: '/expenditures', title: '支出监控', icon: iconMap.Histogram },
       { path: '/users', title: '用户权限', icon: iconMap.UserFilled },
@@ -80,8 +84,9 @@ const menus = computed(() => {
   }
   return [
     { path: '/dashboard', title: '我的看板', icon: iconMap.DataBoard },
+    { path: '/projects/add', title: '新增项目', icon: iconMap.Document },
     { path: '/projects', title: '项目查询', icon: iconMap.FolderOpened },
-    { path: '/budgets', title: '预算/支出查询', icon: iconMap.Money },
+    { path: '/budgets', title: '预算编制', icon: iconMap.Money },
     { path: '/profile', title: '个人中心', icon: iconMap.User }
   ]
 })
