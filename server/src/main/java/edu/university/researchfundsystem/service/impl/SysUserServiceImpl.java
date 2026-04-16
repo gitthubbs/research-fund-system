@@ -17,4 +17,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 .eq(SysUser::getPassword, password); // 注意：实际项目中应使用加密比对
         return this.getOne(queryWrapper);
     }
+
+    @Override
+    public boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        SysUser user = this.getById(userId);
+        if (user == null || !user.getPassword().equals(oldPassword)) {
+            throw new RuntimeException("旧密码验证失败");
+        }
+        user.setPassword(newPassword);
+        return this.updateById(user);
+    }
 }

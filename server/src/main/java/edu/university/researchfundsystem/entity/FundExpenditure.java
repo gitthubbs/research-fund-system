@@ -41,6 +41,13 @@ public class FundExpenditure {
     @TableField("audit_time")
     private LocalDateTime auditTime;
 
+    // ★ 新增
+    @TableField("audit_remark")
+    private String auditRemark;
+
     @TableField("create_time")
     private LocalDateTime createTime;
+
+    @TableField("is_read")
+    private Integer isRead;
 }

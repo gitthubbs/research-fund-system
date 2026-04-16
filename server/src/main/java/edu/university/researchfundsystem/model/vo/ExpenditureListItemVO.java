@@ -15,4 +15,7 @@ public class ExpenditureListItemVO {
     private BigDecimal amount;
     private LocalDate expenditureDate;
     private String remark;
+    private Integer status; // ★ 新增
+    private String applicantName; // ★ 新增
+    private String auditRemark; // ★ 新增
 }

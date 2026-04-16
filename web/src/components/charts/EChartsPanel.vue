@@ -3,12 +3,13 @@
 </template>
 
 <script setup>
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
+import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts'
 import {
   GridComponent,
   LegendComponent,
   TitleComponent,
-  TooltipComponent
+  TooltipComponent,
+  MarkLineComponent
 } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -18,10 +19,12 @@ echarts.use([
   LineChart,
   PieChart,
   BarChart,
+  ScatterChart,
   TitleComponent,
   TooltipComponent,
   GridComponent,
   LegendComponent,
+  MarkLineComponent,
   CanvasRenderer
 ])
 
@@ -32,6 +35,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['item-click'])
+
 const chartRef = ref(null)
 let instance = null
 
@@ -41,6 +46,12 @@ function renderChart() {
     instance = echarts.init(chartRef.value)
   }
   instance.setOption(props.option, true)
+  
+  // ★ 新增：监听点击事件并派发给父组件
+  instance.off('click') // 避免重复绑定
+  instance.on('click', (params) => {
+    emit('item-click', params)
+  })
 }
 
 function handleResize() {

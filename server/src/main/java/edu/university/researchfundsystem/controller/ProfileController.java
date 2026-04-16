@@ -1,10 +1,14 @@
 package edu.university.researchfundsystem.controller;
 
 import edu.university.researchfundsystem.common.Result;
+import edu.university.researchfundsystem.common.SecurityUtils;
 import edu.university.researchfundsystem.entity.SysUser;
 import edu.university.researchfundsystem.service.SysUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -14,26 +18,56 @@ public class ProfileController {
     private final SysUserService userService;
 
     @GetMapping("/me")
-    public Result<SysUser> getProfile() {
-        // 这里应该从认证上下文中获取当前用户ID
-        // 为了演示，我们暂时返回一个默认用户
-        SysUser user = new SysUser();
-        user.setId(1L);
-        user.setUsername("testuser");
-        user.setRealName("测试用户");
-        user.setRole("researcher");
-        user.setDepartment("计算机学院");
-        user.setPhone("13800138000");
-        user.setEmail("test@example.com");
+    public Result<SysUser> getProfile(HttpServletRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId(request);
+        if (userId == null) {
+            return Result.error("未登录或会话已过期");
+        }
+        SysUser user = userService.getById(userId);
+        if (user != null) {
+            user.setPassword(null); // 隐藏密码
+        }
         return Result.success(user);
     }
 
     @PutMapping("/update")
-    public Result<Boolean> updateProfile(@RequestBody SysUser user) {
-        // 这里应该从认证上下文中获取当前用户ID
-        // 并只允许更新当前用户的资料
-        user.setPassword(null); // 不允许更新密码，如果需要更新密码应该使用专门的接口
+    public Result<Boolean> updateProfile(HttpServletRequest request, @RequestBody SysUser user) {
+        Long currentUserId = SecurityUtils.getCurrentUserId(request);
+        if (currentUserId == null) {
+            return Result.error("未登录");
+        }
+        
+        // 核心安全：强制设置 ID 为当前会话 ID，防止越权修改他人
+        user.setId(currentUserId);
+        
+        // 禁止修改账号、角色、密码
+        user.setUsername(null);
+        user.setRole(null);
+        user.setPassword(null);
+        
         boolean success = userService.updateById(user);
         return Result.success(success);
+    }
+
+    @PostMapping("/change-password")
+    public Result<Boolean> changePassword(HttpServletRequest request, @RequestBody Map<String, String> body) {
+        Long userId = SecurityUtils.getCurrentUserId(request);
+        if (userId == null) {
+            return Result.error("未登录");
+        }
+        
+        String oldPassword = body.get("oldPassword");
+        String newPassword = body.get("newPassword");
+        
+        if (oldPassword == null || newPassword == null) {
+            return Result.error("参数不完整");
+        }
+        
+        try {
+            boolean success = userService.changePassword(userId, oldPassword, newPassword);
+            return Result.success(success);
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
     }
 }

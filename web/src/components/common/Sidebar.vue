@@ -40,7 +40,10 @@ import {
   User,
   UserFilled,
   Warning,
-  Grid
+  Grid,
+  Edit,
+  Stamp,
+  Switch
 } from '@element-plus/icons-vue'
 import { getUser } from '@/utils/auth'
 import { roleLabel } from '@/utils/format'
@@ -63,7 +66,10 @@ const iconMap = {
   Document,
   User,
   Warning,
-  Grid
+  Grid,
+  Edit,
+  Stamp,
+  Switch
 }
 
 const user = computed(() => getUser() || { role: 'researcher' })
@@ -73,6 +79,8 @@ const menus = computed(() => {
     return [
       { path: '/projects', title: '项目管理', icon: iconMap.FolderOpened },
       { path: '/projects/audit', title: '项目审核', icon: iconMap.Document },
+      { path: '/expenditures/audit', title: '报销审核', icon: iconMap.Stamp },
+      { path: '/adjustments/audit', title: '调剂审核', icon: iconMap.Stamp },
       { path: '/categories', title: '科目维护', icon: iconMap.Grid },
       { path: '/budgets', title: '预算管理', icon: iconMap.Money },
       { path: '/expenditures', title: '支出监控', icon: iconMap.Histogram },
@@ -84,9 +92,12 @@ const menus = computed(() => {
   }
   return [
     { path: '/dashboard', title: '我的看板', icon: iconMap.DataBoard },
-    { path: '/projects/add', title: '新增项目', icon: iconMap.Document },
     { path: '/projects', title: '项目查询', icon: iconMap.FolderOpened },
+    { path: '/projects/add', title: '新增项目', icon: iconMap.Document },
     { path: '/budgets', title: '预算编制', icon: iconMap.Money },
+    { path: '/expenditures', title: '报销记录', icon: iconMap.Histogram },
+    { path: '/expenditures/add', title: '报销录入', icon: iconMap.Edit },
+    { path: '/adjustments/apply', title: '预算调剂', icon: iconMap.Switch },
     { path: '/profile', title: '个人中心', icon: iconMap.User }
   ]
 })

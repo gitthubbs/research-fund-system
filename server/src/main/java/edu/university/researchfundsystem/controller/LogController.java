@@ -28,14 +28,16 @@ public class LogController {
         
         List<SysLog> logs = logService.list(wrapper);
         
-        // 转换为前端期望的格式
+        // ★ 修改：转换为前端期望的格式 (operator, module, content)
         List<Map<String, Object>> result = logs.stream().map(log -> {
             Map<String, Object> map = new java.util.HashMap<>();
             map.put("id", log.getId());
-            map.put("user", log.getUsername());
-            map.put("action", log.getAction());
+            map.put("operator", log.getUsername()); // ★ 修改
+            map.put("module", "科研经费系统"); // 目前统一模块名
+            map.put("content", log.getAction()); // ★ 修改
             map.put("time", log.getCreateTime().toString());
             map.put("ip", log.getIpAddress());
+            map.put("status", log.getStatusCode());
             return map;
         }).collect(Collectors.toList());
         

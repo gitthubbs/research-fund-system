@@ -8,17 +8,27 @@
         <Header />
       </el-header>
       <el-main class="layout-main">
-        <router-view />
+        <router-view v-if="isRouterAlive" /> <!-- ★ 修改 -->
       </el-main>
     </el-container>
   </el-container>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, nextTick, provide } from 'vue' // ★ 修改
 import Header from '@/components/common/Header.vue'
 import Sidebar from '@/components/common/Sidebar.vue'
 import { getUser } from '@/utils/auth'
+
+// ★ 新增 局部刷新逻辑
+const isRouterAlive = ref(true)
+const reload = () => {
+  isRouterAlive.value = false
+  nextTick(() => {
+    isRouterAlive.value = true
+  })
+}
+provide('reload', reload)
 
 const isCollapse = ref(false)
 const width = ref(window.innerWidth)

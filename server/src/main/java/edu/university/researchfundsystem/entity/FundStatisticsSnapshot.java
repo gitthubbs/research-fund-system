@@ -28,6 +28,14 @@ public class FundStatisticsSnapshot {
     @TableField("execution_rate")
     private BigDecimal executionRate;
 
+    // ★ 新增：存储分类占比 JSON
+    @TableField("category_data")
+    private String categoryData;
+
+    // ★ 新增：存储月度趋势 JSON
+    @TableField("trend_data")
+    private String trendData;
+
     @TableField("snapshot_time")
     private LocalDateTime snapshotTime;
 }

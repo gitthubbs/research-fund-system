@@ -17,6 +17,8 @@ import edu.university.researchfundsystem.service.ResearchProjectService;
 import edu.university.researchfundsystem.service.SysUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import edu.university.researchfundsystem.common.SecurityUtils;
+import javax.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,11 +41,34 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
     private final FundExpenditureMapper expenditureMapper;
     private final FundCategoryService categoryService;
     private final SysUserService userService;
+    private final HttpServletRequest request;
 
     @Override
     public List<ProjectListItemVO> listForView() {
-        List<ResearchProject> projects = this.list();
+        Long currentUserId = SecurityUtils.getCurrentUserId(request);
+        SysUser user = currentUserId != null ? userService.getById(currentUserId) : null;
+        
+        LambdaQueryWrapper<ResearchProject> queryWrapper = new LambdaQueryWrapper<>();
+        if (user != null && "researcher".equals(user.getRole())) {
+            queryWrapper.eq(ResearchProject::getPrincipalId, currentUserId);
+        }
+        
+        List<ResearchProject> projects = this.list(queryWrapper);
         Map<Long, String> principalNameMap = buildPrincipalNameMap(projects);
+        
+        // 批量查询所有相关项目的支出总额，避免 N+1 问题
+        List<Long> projectIds = projects.stream().map(ResearchProject::getId).collect(Collectors.toList());
+        Map<Long, BigDecimal> projectSpentMap = new HashMap<>();
+        if (!projectIds.isEmpty()) {
+            LambdaQueryWrapper<FundExpenditure> expWrapper = new LambdaQueryWrapper<>();
+            expWrapper.in(FundExpenditure::getProjectId, projectIds);
+            List<FundExpenditure> allExpenditures = expenditureMapper.selectList(expWrapper);
+            projectSpentMap = allExpenditures.stream()
+                    .collect(Collectors.groupingBy(FundExpenditure::getProjectId,
+                            Collectors.reducing(BigDecimal.ZERO, FundExpenditure::getAmount, BigDecimal::add)));
+        }
+
+        final Map<Long, BigDecimal> finalProjectSpentMap = projectSpentMap;
         return projects.stream().map(project -> {
             ProjectListItemVO item = new ProjectListItemVO();
             item.setId(project.getId());
@@ -57,6 +82,17 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
             item.setStatus(calculateStatus(project));
             item.setPerformance(calculatePerformance(project.getId()));
             item.setUpdateTime(project.getUpdateTime());
+            
+            // 填充支出和执行率
+            BigDecimal spentAmount = finalProjectSpentMap.getOrDefault(project.getId(), BigDecimal.ZERO);
+            item.setSpentAmount(spentAmount);
+            if (project.getTotalBudget() != null && project.getTotalBudget().compareTo(BigDecimal.ZERO) > 0) {
+                item.setExecutionRate(spentAmount.multiply(new BigDecimal("100"))
+                        .divide(project.getTotalBudget(), 2, RoundingMode.HALF_UP));
+            } else {
+                item.setExecutionRate(BigDecimal.ZERO);
+            }
+            
             return item;
         }).collect(Collectors.toList());
     }
@@ -75,27 +111,48 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         detail.setPrincipalName(resolvePrincipalName(project.getPrincipalId()));
         detail.setPerformance(calculatePerformance(project.getId()));
 
+        // ★ 重构：动态生成项目里程碑
         List<ProjectDetailVO.MilestoneVO> milestones = new ArrayList<>();
-        if (project.getStartDate() != null) {
-            ProjectDetailVO.MilestoneVO milestone = new ProjectDetailVO.MilestoneVO();
-            milestone.setStage("立项");
-            milestone.setContent("项目正式启动");
-            milestone.setDate(project.getStartDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-            milestones.add(milestone);
+        Integer status = project.getStatus() != null ? project.getStatus() : 0;
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-            ProjectDetailVO.MilestoneVO middleMilestone = new ProjectDetailVO.MilestoneVO();
-            middleMilestone.setStage("中期检查");
-            middleMilestone.setContent("项目进展中期评估");
-            middleMilestone.setDate(project.getStartDate().plusMonths(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-            milestones.add(middleMilestone);
+        // 1. 项目申报
+        ProjectDetailVO.MilestoneVO m1 = new ProjectDetailVO.MilestoneVO();
+        m1.setStage("项目申报");
+        m1.setContent("完成项目信息录入与申报");
+        m1.setDate(project.getCreateTime() != null ? project.getCreateTime().format(dtf) : "-");
+        m1.setType(status > 0 ? "success" : "primary");
+        milestones.add(m1);
+
+        // 2. 立项审核
+        ProjectDetailVO.MilestoneVO m2 = new ProjectDetailVO.MilestoneVO();
+        m2.setStage("立项审核");
+        if (status == 3) {
+            m2.setContent("审核未通过：" + project.getAuditRemark());
+            m2.setType("danger");
+        } else {
+            m2.setContent(status >= 2 ? "审核通过，准予立项" : "等待系统审核中");
+            m2.setType(status >= 2 ? "success" : (status == 1 ? "primary" : "info"));
         }
-        if (project.getEndDate() != null) {
-            ProjectDetailVO.MilestoneVO milestone = new ProjectDetailVO.MilestoneVO();
-            milestone.setStage("结题");
-            milestone.setContent("项目完成验收");
-            milestone.setDate(project.getEndDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-            milestones.add(milestone);
-        }
+        m2.setDate(status >= 2 ? project.getUpdateTime().format(dtf) : "-");
+        milestones.add(m2);
+
+        // 3. 预算核定
+        ProjectDetailVO.MilestoneVO m3 = new ProjectDetailVO.MilestoneVO();
+        m3.setStage("预算核定");
+        m3.setContent(status >= 4 ? "预算编制已确认，项目启动" : "待负责人编制分项预算");
+        m3.setType(status >= 4 ? "success" : (status == 2 ? "primary" : "info"));
+        m3.setDate(status >= 4 ? project.getUpdateTime().format(dtf) : "-");
+        milestones.add(m3);
+
+        // 4. 项目结题
+        ProjectDetailVO.MilestoneVO m4 = new ProjectDetailVO.MilestoneVO();
+        m4.setStage("结题验收");
+        m4.setContent(status == 5 ? "项目已顺利结题" : "项目执行监控中");
+        m4.setType(status == 5 ? "success" : (status == 4 ? "primary" : "info"));
+        m4.setDate(status == 5 ? project.getEndDate().format(dtf) : (project.getEndDate() != null ? project.getEndDate().format(dtf) : "-"));
+        milestones.add(m4);
+
         detail.setMilestones(milestones);
 
         LambdaQueryWrapper<FundBudget> budgetWrapper = new LambdaQueryWrapper<>();
@@ -135,6 +192,8 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         detail.setStatus(project.getStatus());
         detail.setStatusText(calculateStatus(project));
         detail.setAuditRemark(project.getAuditRemark());
+        detail.setStartDate(project.getStartDate()); // ★ 新增
+        detail.setEndDate(project.getEndDate());     // ★ 新增
 
         return detail;
     }

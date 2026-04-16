@@ -1,198 +1,417 @@
-﻿<template>
+<template>
   <div class="page">
+    <!-- 1. 英雄区 -->
     <section class="hero">
-      <div>
-        <p class="eyebrow">{{ roleLabel(user?.role) }}工作台</p>
-        <h1>科研经费管理看板</h1>
-        <p class="subtitle">围绕项目执行率、分类占比与月度趋势做统一监控。</p>
+      <div class="hero-content">
+        <div>
+          <p class="eyebrow">{{ roleLabel(user?.role) }}工作台</p>
+          <h1>科研经费管理看板</h1>
+          <p class="subtitle">{{ user?.role === 'admin' ? '围绕项目执行率、分类占比与月度趋势做统一监控。' : '查看您负责的项目预算执行情况与月度支出趋势。' }}</p>
+        </div>
+        <div class="hero-actions">
+          <div v-if="user?.role === 'admin' && statsOverview.snapshotTime" class="update-time">
+            最后更新于: {{ statsOverview.snapshotTime }}
+          </div>
+          <el-button v-if="user?.role === 'admin'" type="primary" :loading="syncLoading" :icon="Refresh" @click="manualSync">
+            同步快照数据
+          </el-button>
+        </div>
       </div>
     </section>
 
-    <el-row :gutter="16" class="stats-row">
-      <el-col v-for="item in overview" :key="item.label" :xs="24" :sm="12" :lg="8">
-        <el-card shadow="hover" class="metric-card">
-          <el-statistic :title="item.label" :value="item.value" :precision="item.precision || 0">
-            <template v-if="item.type === 'currency'" #prefix>¥</template>
-            <template v-if="item.suffix" #suffix>{{ item.suffix }}</template>
-          </el-statistic>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 2. 主统计区 -->
+    <div class="dashboard-main">
+      <el-row :gutter="16" class="stats-row">
+        <el-col v-for="item in overview" :key="item.label" :xs="24" :sm="12" :lg="8">
+          <el-card shadow="hover" class="metric-card">
+            <el-statistic :title="item.label" :value="item.value" :precision="item.precision || 0">
+              <template v-if="item.type === 'currency'" #prefix>¥</template>
+              <template v-if="item.suffix" #suffix>{{ item.suffix }}</template>
+            </el-statistic>
+          </el-card>
+        </el-col>
+      </el-row>
 
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="12">
-        <ChartCard title="项目执行率" subtitle="预算执行比例" :loading="loading">
-          <EChartsPanel v-if="projectExecution.length" :option="barOption" />
-          <el-empty v-else description="暂无数据" />
-        </ChartCard>
-      </el-col>
-      <el-col :xs="24" :lg="12">
-        <ChartCard title="分类支出占比" subtitle="按分类金额统计" :loading="loading">
-          <EChartsPanel v-if="categoryShare.length" :option="pieOption" />
-          <el-empty v-else description="暂无数据" />
-        </ChartCard>
-      </el-col>
-    </el-row>
+      <el-row :gutter="16" style="margin-top: 20px">
+        <!-- ★ 图表优化：横向双维度对比图 -->
+        <el-col :xs="24" :lg="16">
+          <ChartCard title="项目执行与进度对比" subtitle="决策支持：对比当前经费执行与时间推移" :loading="loading">
+            <EChartsPanel 
+              v-if="projectExecution.length" 
+              :option="barOption" 
+              @item-click="handleChartClick" 
+            />
+            <el-empty v-else description="暂无项目数据" />
+          </ChartCard>
+        </el-col>
+        
+        <el-col :xs="24" :lg="8">
+          <ChartCard title="分类支出占比" subtitle="按分类金额统计" :loading="loading">
+            <EChartsPanel v-if="categoryShare.length" :option="pieOption" />
+            <el-empty v-else description="暂无数据" />
+          </ChartCard>
+        </el-col>
+      </el-row>
 
-    <ChartCard title="月度支出趋势" subtitle="按月份聚合" :loading="loading">
-      <EChartsPanel v-if="monthlyTrend.length" :option="lineOption" />
-      <el-empty v-else description="暂无数据" />
-    </ChartCard>
+      <div style="margin-top: 20px">
+        <ChartCard title="月度支出趋势" subtitle="历史支出与未来预测" :loading="loading">
+          <EChartsPanel v-if="trendData.months.length" :option="lineOption" />
+          <el-empty v-else description="暂无历史数据" />
+          
+          <div v-if="trendData.months.length" class="decision-box">
+            <el-alert
+              v-if="trendData.forecast?.isAlert"
+              title="支出频率预警：当前月均消耗率高于立项计划，建议关注余额。"
+              type="warning"
+              show-icon
+              :closable="false"
+            />
+            <el-alert
+              v-if="isLagging"
+              title="执行偏差提醒：部分项目经费执行显著滞后于时间进度，建议关注执行效率。"
+              type="info"
+              show-icon
+              :closable="false"
+              style="margin-top: 8px"
+            />
+          </div>
+        </ChartCard>
+      </div>
+    </div>
+
+    <!-- 3. 悬浮助手触发球 (仅科研人员) -->
+    <div 
+      v-if="user?.role === 'researcher'" 
+      class="float-assistant-trigger"
+      :class="{ 'has-advice': advices.length > 0 }"
+      @click="drawerVisible = true"
+    >
+      <el-badge :value="advices.length || ''" :hidden="!advices.length" class="badge-item">
+        <div class="ai-sphere">
+          <el-icon><MagicStick /></el-icon>
+        </div>
+      </el-badge>
+      <span class="trigger-label">智能助手</span>
+    </div>
+
+    <!-- 4. 助手抽屉面板 -->
+    <el-drawer
+      v-model="drawerVisible"
+      title="智能助手建议"
+      direction="rtl"
+      size="380px"
+      append-to-body
+      class="assistant-drawer"
+    >
+      <template #header>
+        <div class="drawer-header">
+          <el-icon class="ai-icon"><MagicStick /></el-icon>
+          <span>智能助手</span>
+          <el-tag size="small" type="success" effect="plain" round style="margin-left: 10px">扫描中</el-tag>
+        </div>
+      </template>
+
+      <div v-loading="adviceLoading" class="advice-list">
+        <template v-if="groupedAdvices.length">
+          <!-- ★ 聚合卡片设计 -->
+          <div 
+            v-for="(group, gIdx) in groupedAdvices" 
+            :key="gIdx" 
+            class="advice-group-card"
+            :class="[group.type, { 'is-expanded': expandedGroups.includes(group.title) }]"
+          >
+            <div class="group-header" @click="toggleGroup(group.title)">
+              <div class="group-title-info">
+                <el-icon v-if="group.type === 'danger'"><WarningFilled /></el-icon>
+                <el-icon v-else-if="group.type === 'warning'"><BellFilled /></el-icon>
+                <el-icon v-else><InfoFilled /></el-icon>
+                <span class="title-text">{{ group.title }}</span>
+              </div>
+              <div class="group-header-right">
+                <el-badge 
+                  :value="group.items.length" 
+                  :hidden="group.items.length <= 1" 
+                  type="danger" 
+                  class="group-badge"
+                />
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+
+            <!-- 展开详情区域 -->
+            <el-collapse-transition>
+              <div v-show="expandedGroups.includes(group.title)" class="group-details">
+                <div 
+                  v-for="(item, iIdx) in group.items" 
+                  :key="iIdx" 
+                  class="detail-item"
+                  @click="handleAction(item.link)"
+                >
+                  <div class="detail-dot"></div>
+                  <div class="detail-content">{{ item.content }}</div>
+                  <el-icon class="jump-icon"><Right /></el-icon>
+                </div>
+                <!-- 底部交互：仅在聚合场景下显示统一已读 -->
+                <div v-if="group.items[0].businessType" class="group-footer">
+                  <el-button link type="info" size="small" @click.stop="markRead(group.items[0])">
+                    <el-icon><CircleCheck /></el-icon>全部标记为已读
+                  </el-button>
+                </div>
+              </div>
+            </el-collapse-transition>
+          </div>
+        </template>
+        <el-empty v-else description="暂无潜在风险，经费运行良好" />
+      </div>
+      
+      <template #footer>
+        <div class="drawer-footer">
+          建议仅供参考，请以最新财务通知为准
+        </div>
+      </template>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { 
+  Refresh, MagicStick, WarningFilled, 
+  BellFilled, InfoFilled, CircleCheck,
+  ArrowRight, Right
+} from '@element-plus/icons-vue'
 import { statisticsApi } from '@/api/statisticsApi'
 import EChartsPanel from '@/components/charts/EChartsPanel.vue'
 import ChartCard from '@/components/charts/ChartCard.vue'
 import { getUser } from '@/utils/auth'
 import { roleLabel } from '@/utils/format'
 
+const router = useRouter()
 const loading = ref(false)
+const adviceLoading = ref(false)
+const drawerVisible = ref(false)
 const user = ref(getUser())
 
-// ★ 新增
+// 数据存储
 const projectExecution = ref([])
-// ★ 新增
 const categoryShare = ref([])
-// ★ 新增
-const monthlyTrend = ref([])
+const advices = ref([])
+const trendData = ref({ months: [], actualData: [], forecast: {}, baseline: 0 })
+const statsOverview = ref({ projectCount: 0, totalSpent: 0, rate: 0, snapshotTime: '' })
 
-// ★ 新增
-const overview = computed(() => {
-  const projectCount = projectExecution.value.length
-  const totalExpenditure = categoryShare.value.reduce((sum, item) => sum + Number(item.value || 0), 0)
-  const avgExecution = projectCount
-    ? projectExecution.value.reduce((sum, item) => sum + Number(item.value || 0), 0) / projectCount
-    : 0
-  return [
-    { label: '项目数量', value: projectCount },
-    { label: '总支出', value: totalExpenditure, type: 'currency', precision: 2 },
-    { label: '平均执行率', value: avgExecution, precision: 2, suffix: '%' }
-  ]
+// 交互状态
+const expandedGroups = ref([])
+
+const isLagging = computed(() => {
+  if (!projectExecution.value.length) return false
+  const avgTimeProgress = projectExecution.value.reduce((acc, cur) => acc + cur.timeProgress, 0) / projectExecution.value.length
+  // 只有当平均时间进度超过 10% 时，且总执行率低于 30%，才判定为滞后
+  return avgTimeProgress > 10 && statsOverview.value.rate < 30
+})
+const overview = computed(() => [
+  { label: '项目数量', value: statsOverview.value.projectCount },
+  { label: '累计总支出', value: statsOverview.value.totalSpent, type: 'currency', precision: 2 },
+  { label: '平均执行率', value: statsOverview.value.rate, precision: 2, suffix: '%' }
+])
+
+// ★ 计算聚合后的建议
+const groupedAdvices = computed(() => {
+  const groups = {}
+  advices.value.forEach(ad => {
+    if (!groups[ad.title]) {
+      groups[ad.title] = { 
+        title: ad.title, 
+        type: ad.type, 
+        items: [] 
+      }
+    }
+    groups[ad.title].items.push(ad)
+  })
+  return Object.values(groups)
 })
 
-// ★ 修改
+// 加载数据
 async function loadSummary() {
   loading.value = true
   try {
-    const [projectExecutionResp, categoryResp, monthlyResp] = await Promise.all([
+    const [overviewResp, projectResp, categoryResp, monthlyResp] = await Promise.all([
+      statisticsApi.getOverview(),
       statisticsApi.getProjectExecution(),
       statisticsApi.getCategoryShare(),
       statisticsApi.getMonthly()
-    ])
+    ]).catch(() => [{}, {}, {}, {}])
 
-    projectExecution.value = (projectExecutionResp.data || []).map((item) => ({
-      name: item.projectName,
-      value: Number(item.executionRate || 0) * 100
+    statsOverview.value = overviewResp.data || { projectCount: 0, totalSpent: 0, rate: 0, snapshotTime: '' }
+    
+    // 注入多维数据
+    projectExecution.value = (projectResp.data || []).reverse().map(i => ({
+      name: i.projectName,
+      value: Number(i.rate || 0),
+      projectId: i.projectId,
+      timeProgress: Number(i.timeProgress || 0)
     }))
 
-    categoryShare.value = (categoryResp.data || []).map((item) => ({
-      name: item.categoryName,
-      value: Number(item.amount || 0)
-    }))
-
-    monthlyTrend.value = (monthlyResp.data || []).map((item) => ({
-      month: item.month,
-      amount: Number(item.amount || 0)
-    }))
+    categoryShare.value = (categoryResp.data || []).map(i => ({ name: i.categoryName, value: Number(i.amount || 0) }))
+    trendData.value = monthlyResp.data || { months: [], actualData: [], forecast: {}, baseline: 0 }
   } finally {
     loading.value = false
   }
 }
 
-// ★ 新增
-const barOption = computed(() => ({
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: { type: 'shadow' },
-    valueFormatter: (value) => `${Number(value).toFixed(2)}%`
-  },
-  grid: { left: 20, right: 20, top: 20, bottom: 48, containLabel: true },
-  xAxis: {
-    type: 'category',
-    axisLabel: { rotate: 25 },
-    data: projectExecution.value.map((item) => item.name)
-  },
-  yAxis: {
-    type: 'value',
-    max: 100,
-    axisLabel: { formatter: '{value}%' }
-  },
-  series: [
-    {
-      type: 'bar',
-      data: projectExecution.value.map((item) => item.value),
-      barWidth: 28,
-      itemStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            { offset: 0, color: '#0ea5e9' },
-            { offset: 1, color: '#2563eb' }
-          ]
-        },
-        borderRadius: [8, 8, 0, 0]
+async function loadAdvices() {
+  if (user.value?.role !== 'researcher') return
+  adviceLoading.value = true
+  try {
+    const res = await statisticsApi.getAssistantAdvice()
+    advices.value = res.data || []
+    // 默认展开第一个有内容的组
+    if (advices.value.length > 0) {
+      const firstTitle = advices.value[0].title
+      if (!expandedGroups.value.includes(firstTitle)) {
+        expandedGroups.value.push(firstTitle)
       }
     }
-  ]
-}))
+  } finally {
+    adviceLoading.value = false
+  }
+}
 
-const lineOption = computed(() => ({
-  tooltip: {
-    trigger: 'axis',
-    valueFormatter: (value) => `¥${Number(value).toLocaleString('zh-CN')}`
-  },
-  grid: {
-    left: 20,
-    right: 20,
-    top: 20,
-    bottom: 28,
-    containLabel: true
-  },
-  xAxis: {
-    type: 'category',
-    boundaryGap: false,
-    data: monthlyTrend.value.map((item) => item.month),
-    axisLine: { lineStyle: { color: '#cbd5e1' } }
-  },
-  yAxis: {
-    type: 'value',
-    splitLine: { lineStyle: { color: '#e2e8f0' } },
-    axisLabel: {
-      formatter: (value) => `${Math.round(value / 1000)}k`
-    }
-  },
-  series: [
-    {
-      type: 'line',
-      smooth: true,
-      data: monthlyTrend.value.map((item) => item.amount),
-      symbolSize: 8,
-      lineStyle: { color: '#2563eb', width: 3 },
-      itemStyle: { color: '#1d4ed8' },
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(37, 99, 235, 0.28)' },
-            { offset: 1, color: 'rgba(37, 99, 235, 0.02)' }
-          ]
+// 交互逻辑
+function toggleGroup(title) {
+  const index = expandedGroups.value.indexOf(title)
+  if (index > -1) {
+    expandedGroups.value.splice(index, 1)
+  } else {
+    expandedGroups.value.push(title)
+  }
+}
+
+function handleChartClick(params) {
+  const data = projectExecution.value[params.dataIndex]
+  if (data?.projectId) router.push(`/projects/${data.projectId}`)
+}
+
+function handleAction(link) {
+  if (!link) return
+  drawerVisible.value = false
+  router.push(link)
+}
+
+async function markRead(advice) {
+  try {
+    await statisticsApi.markAdviceRead(advice.businessType)
+    await loadAdvices()
+    ElMessage.success('已标记')
+  } catch (e) { ElMessage.error('操作失败') }
+}
+
+async function manualSync() {
+  syncLoading.value = true
+  try {
+    await statisticsApi.saveSnapshot(0)
+    await loadSummary()
+    ElMessage.success('统计已同步')
+  } finally { syncLoading.value = false }
+}
+
+const syncLoading = ref(false)
+
+// ★ 图表配置优化：决策支持型条形图
+const barOption = computed(() => {
+  const names = projectExecution.value.map(i => i.name)
+  const rates = projectExecution.value.map(i => i.value)
+  const progresses = projectExecution.value.map(i => i.timeProgress)
+
+  return {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const rate = params[1].value
+        const progress = params[0].value
+        const color = rate > progress ? '#ef4444' : '#10b981'
+        return `<b>${params[0].name}</b><br/>
+                经费执行率: <span style="color:${color}">${rate}%</span><br/>
+                项目进度比: ${progress}%<br/>
+                <small style="color:#94a3b8">点击可查看预算明细</small>`
+      }
+    },
+    legend: {
+      show: true,
+      bottom: 0,
+      data: ['经费执行率', '预计时间进度'],
+      textStyle: { color: '#64748b', fontSize: 12 }
+    },
+    grid: { left: 20, right: 80, top: 20, bottom: 40, containLabel: true },
+    xAxis: { type: 'value', max: (v) => Math.max(100, v.max), splitLine: { lineStyle: { type: 'dashed' } } },
+    yAxis: {
+      type: 'category',
+      data: names,
+      axisLabel: {
+        width: 140, overflow: 'truncate', interval: 0,
+        formatter: (val) => val.length > 12 ? val.slice(0, 11) + '...' : val
+      }
+    },
+    series: [
+      {
+        name: '预计时间进度',
+        type: 'bar',
+        data: progresses,
+        barWidth: 28, // 较宽的背景条
+        itemStyle: {
+          color: 'rgba(203, 213, 225, 0.5)',
+          borderRadius: [0, 4, 4, 0]
+        },
+        z: 1,
+        silent: true // 背景条不触发事件
+      },
+      {
+        name: '经费执行率',
+        type: 'bar',
+        data: rates,
+        barWidth: 12, // 较细的彩色条，叠放在宽条中心
+        barGap: '-72%', // 关键：利用负间隔实现中心重叠
+        z: 3,
+        label: { 
+          show: true, 
+          position: 'right', 
+          formatter: '{c}%', 
+          color: '#1e293b', 
+          fontWeight: 'bold',
+          distance: 10
+        },
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+          color: (params) => {
+            const val = params.value
+            if (val >= 100) return '#F56C6C' 
+            if (val >= 80) return '#E6A23C'
+            return '#67C23A'
+          }
         }
       }
-    }
-  ]
-}))
+    ]
+  }
+})
 
+// Line & Pie remains updated from previous logic ...
+const lineOption = computed(() => { /* ... similar level of detail ... */ 
+    const { months, actualData, forecast, baseline } = trendData.value
+    if (!months?.length) return {}
+    return {
+      tooltip: { trigger: 'axis' },
+      grid: { left: 40, right: 40, top: 40, bottom: 20 },
+      xAxis: { type: 'category', boundaryGap: false, data: [...months, forecast.nextMonth] },
+      yAxis: { type: 'value' },
+      series: [
+        { name: '实际支出', type: 'line', smooth: true, data: actualData, areaStyle: { color: 'rgba(37, 99, 235, 0.1)' }, lineStyle: { width: 3 } },
+        { name: '预测支出', type: 'line', smooth: true, data: [...Array(actualData.length - 1).fill(null), actualData[actualData.length-1], forecast.value], lineStyle: { type: 'dashed' } }
+      ],
+      markLine: { data: [{ yAxis: baseline }], lineStyle: { color: '#f59e0b', type: 'dashed' } }
+    }
+})
 const pieOption = computed(() => ({
   tooltip: {
     trigger: 'item',
@@ -206,54 +425,143 @@ const pieOption = computed(() => ({
   series: [
     {
       type: 'pie',
-      radius: ['48%', '72%'],
-      center: ['50%', '44%'],
+      radius: ['42%', '68%'],
+      center: ['50%', '42%'],
       itemStyle: {
         borderRadius: 10,
         borderColor: '#fff',
         borderWidth: 3
       },
       label: {
-        formatter: '{b}\n{d}%'
+        formatter: '{b}\n{d}%',
+        overflow: 'none', 
+        edgeDistance: '5%'
       },
       data: categoryShare.value
     }
   ]
 }))
 
-onMounted(loadSummary)
+onMounted(() => { loadSummary(); loadAdvices(); })
 </script>
 
 <style scoped>
-.page {
-  display: grid;
-  gap: 16px;
+.page { display: flex; flex-direction: column; gap: 24px; }
+.hero { padding: 32px; border-radius: 28px; background: linear-gradient(135deg, #f0f7ff, #e0f2fe); }
+.eyebrow { color: #2563eb; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 13px; }
+.metric-card { border-radius: 20px; border: none; }
+
+.float-assistant-trigger { position: fixed; right: 40px; bottom: 40px; cursor: pointer; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ai-sphere { width: 60px; height: 60px; border-radius: 30px; background: linear-gradient(135deg, #8b5cf6, #6366f1); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3); }
+.has-advice .ai-sphere::after { content: ''; position: absolute; width:100%; height:100%; border-radius:50%; border:3px solid #8b5cf6; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { transform: scale(1); opacity:0.6; } 100% { transform: scale(1.6); opacity:0; } }
+
+.trigger-label { font-size: 12px; font-weight: 700; color: #6366f1; background: #fff; padding: 2px 8px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+/* 助手聚合卡片样式 */
+.advice-list { display: flex; flex-direction: column; gap: 14px; padding: 10px 0; }
+
+.advice-group-card {
+  border-radius: 16px; 
+  border: 1px solid #f1f5f9;
+  background: #fff;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.hero {
-  padding: 28px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.24), transparent 28%),
-    linear-gradient(135deg, #f8fbff, #eef5ff);
+.group-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
 }
 
-.eyebrow {
-  color: #1d4ed8;
-  font-weight: 600;
-  margin-bottom: 8px;
+.group-title-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
 }
 
-.subtitle {
-  color: #64748b;
-  margin-top: 10px;
+.title-text { color: #1e293b; }
+
+.group-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.stats-row {
-  margin-bottom: 0;
+.arrow-icon {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: transform 0.3s ease;
 }
 
-.metric-card {
-  border-radius: 20px;
+.is-expanded .arrow-icon { transform: rotate(90deg); }
+
+/* 类型配色 */
+.danger.advice-group-card { border-left: 5px solid #ef4444; }
+.warning.advice-group-card { border-left: 5px solid #f59e0b; }
+.info.advice-group-card { border-left: 5px solid #2563eb; }
+
+.danger .group-title-info .el-icon { color: #ef4444; }
+.warning .group-title-info .el-icon { color: #f59e0b; }
+.info .group-title-info .el-icon { color: #2563eb; }
+
+/* 详情列表 */
+.group-details {
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
 }
+
+.detail-item {
+  padding: 12px 16px 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-item:last-of-type { border-bottom: none; }
+
+.detail-item:hover { background: #f1f5f9; }
+
+.detail-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: #cbd5e1;
+}
+
+.detail-content {
+  flex: 1;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.jump-icon {
+  font-size: 14px;
+  color: #3b82f6;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.detail-item:hover .jump-icon { opacity: 1; }
+
+.group-footer {
+  padding: 8px 16px;
+  display: flex;
+  justify-content: flex-end;
+  background: #fff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.drawer-footer { text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+
+.decision-box { margin-top: 20px; }
 </style>

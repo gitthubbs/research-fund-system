@@ -12,5 +12,9 @@ export const budgetApi = {
   update: (data) => request.put('/budgets/update', data),
   
   // 删除预算
-  delete: (id) => request.delete(`/budgets/delete/${id}`)
+  delete: (id) => request.delete(`/budgets/delete/${id}`),
+
+  // ★ 新增：获取可用余额
+  getAvailableBalance: (projectId, categoryId) => 
+    request.get('/budgets/available', { params: { projectId, categoryId } })
 };

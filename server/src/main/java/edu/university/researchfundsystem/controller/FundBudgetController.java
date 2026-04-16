@@ -7,6 +7,7 @@ import edu.university.researchfundsystem.service.FundBudgetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -41,5 +42,11 @@ public class FundBudgetController {
     @DeleteMapping("/delete/{id}")
     public Result<Boolean> delete(@PathVariable Long id) {
         return Result.success(budgetService.removeById(id));
+    }
+
+    // ★ 新增：获取可用余额
+    @GetMapping("/available")
+    public Result<BigDecimal> getAvailable(Long projectId, Long categoryId) {
+        return Result.success(budgetService.getAvailableBalance(projectId, categoryId));
     }
 }

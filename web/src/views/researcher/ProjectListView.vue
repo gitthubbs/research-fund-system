@@ -17,6 +17,23 @@
             <el-progress :percentage="Number(row.executionRate || 0)" :stroke-width="14" />
           </template>
         </el-table-column>
+        <el-table-column label="智能标签" width="160">
+          <template #default="{ row }">
+            <div class="smart-tags">
+              <el-tag
+                v-for="tag in getSmartLabels(row)"
+                :key="tag.text"
+                :type="tag.type"
+                size="small"
+                effect="dark"
+                class="clickable-tag"
+                @click.stop="tag.action()"
+              >
+                {{ tag.text }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
             <StatusTag :status="row.status" />
@@ -147,6 +164,49 @@ async function handleConfirmBudget(id) {
   })
 }
 
+const getSmartLabels = (row) => {
+  const labels = []
+  if (!row.startDate || !row.endDate || row.status !== '执行中') return labels
+
+  const now = new Date()
+  const start = new Date(row.startDate)
+  const end = new Date(row.endDate)
+  
+  // 时间进度 (0~1)
+  let timeProgress = 0
+  if (now > end) {
+    timeProgress = 1
+  } else if (now >= start) {
+    const totalDuration = end.getTime() - start.getTime()
+    const elapsed = now.getTime() - start.getTime()
+    timeProgress = elapsed / totalDuration
+  }
+
+  // 1. 余额告急: (总预算 - 已支出) / 总预算 < 10%
+  const total = Number(row.totalBudget || 0)
+  const spent = Number(row.spentAmount || 0)
+  if (total > 0 && (total - spent) / total < 0.1) {
+    labels.push({
+      type: 'danger',
+      text: '余额告急',
+      action: () => router.push(`/projects/${row.id}`)
+    })
+  }
+
+  // 2. 进度滞后: 执行率 < 时间进度 * 40% (其中时间进度转为百分比)
+  // 增加时间进度门槛 (0.1)，防止新立项项目误报
+  const execRate = Number(row.executionRate || 0)
+  if (timeProgress > 0.1 && execRate < timeProgress * 40) {
+    labels.push({
+      type: 'warning',
+      text: '进度滞后',
+      action: () => router.push({ path: `/projects/${row.id}` })
+    })
+  }
+
+  return labels
+}
+
 onMounted(loadData)
 </script>
 
@@ -156,4 +216,7 @@ onMounted(loadData)
 .muted { color: #64748b; font-size: 14px; margin: 4px 0 0; }
 .edit-tip { margin-top: 12px; color: #94a3b8; font-size: 13px; font-style: italic; }
 .status-tip { margin-left: 12px; }
+.smart-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.clickable-tag { cursor: pointer; transition: transform 0.2s; }
+.clickable-tag:hover { transform: scale(1.05); filter: brightness(1.1); }
 </style>

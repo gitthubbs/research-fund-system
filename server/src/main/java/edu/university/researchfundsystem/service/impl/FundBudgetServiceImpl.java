@@ -101,4 +101,28 @@ public class FundBudgetServiceImpl extends ServiceImpl<FundBudgetMapper, FundBud
             return item;
         }).collect(Collectors.toList());
     }
+
+    @Override
+    public BigDecimal getAvailableBalance(Long projectId, Long categoryId) {
+        // 1. 查询该项目该科目的预算额度
+        LambdaQueryWrapper<FundBudget> budgetWrapper = new LambdaQueryWrapper<>();
+        budgetWrapper.eq(FundBudget::getProjectId, projectId)
+                .eq(FundBudget::getCategoryId, categoryId);
+        FundBudget budget = this.getOne(budgetWrapper);
+        BigDecimal budgetAmount = budget != null ? budget.getBudgetAmount() : BigDecimal.ZERO;
+
+        // 2. 查询该项目该科目已审批通过的支出总额 (status = 1: 已通过)
+        LambdaQueryWrapper<FundExpenditure> expenditureWrapper = new LambdaQueryWrapper<>();
+        expenditureWrapper.eq(FundExpenditure::getProjectId, projectId)
+                .eq(FundExpenditure::getCategoryId, categoryId)
+                .eq(FundExpenditure::getStatus, 1);
+        List<FundExpenditure> expenditures = expenditureMapper.selectList(expenditureWrapper);
+        BigDecimal spentAmount = expenditures.stream()
+                .map(FundExpenditure::getAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 3. 可用余额 = 预算 - 已过审支出
+        return budgetAmount.subtract(spentAmount);
+    }
 }

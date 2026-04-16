@@ -1,5 +1,6 @@
 package edu.university.researchfundsystem.controller;
 
+import edu.university.researchfundsystem.common.annotation.Log;
 import edu.university.researchfundsystem.common.Result;
 import edu.university.researchfundsystem.common.SecurityUtils;
 import edu.university.researchfundsystem.entity.ResearchProject;
@@ -21,6 +22,7 @@ public class ResearchProjectController {
     private final ResearchProjectService projectService;
     private final HttpServletRequest request;
 
+    @Log("项目立项申请")
     @PostMapping("")
     public Result<Long> create(@RequestBody ResearchProject project) {
         Long userId = SecurityUtils.getCurrentUserId(request);
@@ -36,11 +38,13 @@ public class ResearchProjectController {
         return Result.error("项目创建失败");
     }
 
+    @Log("提交项目审核")
     @PutMapping("/submit/{id}")
     public Result<Boolean> submit(@PathVariable Long id) {
         return Result.success(projectService.submitProject(id));
     }
 
+    @Log("项目立项审批")
     @PutMapping("/audit")
     public Result<Boolean> audit(@RequestBody ProjectAuditDTO auditDTO) {
         if (auditDTO.getId() == null || auditDTO.getStatus() == null) {
@@ -64,15 +68,7 @@ public class ResearchProjectController {
         return Result.success(projectService.getProjectDetail(id));
     }
 
-    @PostMapping("/create")
-    public Result<Long> save(@RequestBody ResearchProject project) {
-        boolean success = projectService.save(project);
-        if (success) {
-            return Result.success(project.getId());
-        }
-        return Result.error("项目创建失败");
-    }
-
+    @Log("修改项目信息")
     @PutMapping("/update")
     public Result<Boolean> update(@RequestBody ResearchProject project) {
         if (project.getId() == null) {
@@ -81,6 +77,7 @@ public class ResearchProjectController {
         return Result.success(projectService.updateById(project));
     }
 
+    @Log("确认项目预算")
     @PutMapping("/confirm-budget/{id}")
     public Result<String> confirmBudget(@PathVariable Long id) {
         if (projectService.confirmBudget(id)) {

@@ -12,10 +12,14 @@ const ProjectManage = () => import('@/views/admin/ProjectManageView.vue')
 const ProjectList = () => import('@/views/researcher/ProjectListView.vue')
 const ProjectAdd = () => import('@/views/researcher/ProjectAddView.vue')
 const ProjectAudit = () => import('@/views/admin/ProjectAuditView.vue')
+const ExpenditureAdd = () => import('@/views/researcher/ExpenditureAddView.vue') // ★ 新增
+const ExpenditureAudit = () => import('@/views/admin/ExpenditureAuditView.vue') // ★ 新增
 const UsersView = () => import('@/views/admin/UsersView.vue')
 const LogsView = () => import('@/views/admin/LogsView.vue')
 const WarningSettingsView = () => import('@/views/admin/WarningSettingsView.vue')
 const CategoryManage = () => import('@/views/admin/CategoryManageView.vue')
+const AdjustmentApply = () => import('@/views/researcher/AdjustmentApplyView.vue') // ★ 新增
+const AdjustmentAudit = () => import('@/views/admin/AdjustmentAuditView.vue') // ★ 新增
 const ForbiddenView = () => import('@/views/ForbiddenView.vue')
 const ProfileView = () => import('@/views/ProfileView.vue')
 const NotFoundView = () => import('@/views/NotFoundView.vue')
@@ -45,19 +49,19 @@ const routes = [
         path: 'projects/:id',
         name: 'project-detail',
         component: ProjectDetailView,
-        meta: { title: '项目详情', roles: ['admin', 'researcher'], hiddenInMenu: true }
+        meta: { title: '项目详情', roles: ['admin', 'researcher'], hiddenInMenu: true, parent: 'projects' } // ★ 修改
       },
       {
         path: 'projects/add',
         name: 'project-add',
         component: ProjectAdd,
-        meta: { title: '新增项目', roles: ['researcher'], hiddenInMenu: true }
+        meta: { title: '新增项目', roles: ['researcher'], hiddenInMenu: true, parent: 'projects' } // ★ 修改
       },
       {
         path: 'projects/audit',
         name: 'project-audit',
         component: ProjectAudit,
-        meta: { title: '项目审核', roles: ['admin'] }
+        meta: { title: '项目审核', roles: ['admin'], parent: 'projects' } // ★ 修改
       },
       {
         path: 'categories',
@@ -75,7 +79,19 @@ const routes = [
         path: 'expenditures',
         name: 'expenditures',
         component: ExpendituresView,
-        meta: { title: '支出监控', roles: ['admin', 'researcher'], icon: 'Histogram' }
+        meta: { title: '报销记录', roles: ['admin', 'researcher'], icon: 'Histogram' }
+      },
+      {
+        path: 'expenditures/audit',
+        name: 'expenditure-audit',
+        component: ExpenditureAudit,
+        meta: { title: '报销审核', roles: ['admin'], icon: 'Stamp', parent: 'expenditures' } // ★ 修改
+      },
+      {
+        path: 'expenditures/add',
+        name: 'expenditure-add',
+        component: ExpenditureAdd,
+        meta: { title: '报销录入', roles: ['researcher'], icon: 'Edit', parent: 'expenditures' } // ★ 修改
       },
       {
         path: 'warning-settings',
@@ -100,6 +116,18 @@ const routes = [
         name: 'profile',
         component: ProfileView,
         meta: { title: '个人中心', roles: ['admin', 'researcher'], icon: 'User' }
+      },
+      {
+        path: 'adjustments/apply',
+        name: 'adjustment-apply',
+        component: AdjustmentApply,
+        meta: { title: '预算调剂', roles: ['researcher'], icon: 'Switch' }
+      },
+      {
+        path: 'adjustments/audit',
+        name: 'adjustment-audit',
+        component: AdjustmentAudit,
+        meta: { title: '调剂审核', roles: ['admin'], icon: 'Stamp' }
       }
     ]
   },

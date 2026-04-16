@@ -1,5 +1,6 @@
 package edu.university.researchfundsystem.controller;
 
+import edu.university.researchfundsystem.common.annotation.Log;
 import edu.university.researchfundsystem.common.Result;
 import edu.university.researchfundsystem.entity.SysUser;
 import edu.university.researchfundsystem.model.vo.UserListItemVO;
@@ -26,6 +27,7 @@ public class UserController {
         return Result.success(users);
     }
 
+    @Log("管理端-创建用户")
     @PostMapping("/create")
     public Result<Long> save(@RequestBody SysUser user) {
         user.setCreateTime(java.time.LocalDateTime.now());
@@ -36,6 +38,7 @@ public class UserController {
         return Result.error("用户创建失败");
     }
 
+    @Log("管理端-修改用户")
     @PutMapping("/update")
     public Result<Boolean> update(@RequestBody SysUser user) {
         if (user.getId() == null) {
@@ -44,11 +47,13 @@ public class UserController {
         return Result.success(userService.updateById(user));
     }
 
+    @Log("管理端-删除用户")
     @DeleteMapping("/delete/{id}")
     public Result<Boolean> delete(@PathVariable Long id) {
         return Result.success(userService.removeById(id));
     }
 
+    @Log("管理端-分配角色")
     @PutMapping("/role/{id}")
     public Result<Boolean> switchRole(@PathVariable Long id, @RequestBody Map<String, String> request) {
         String role = request.get("role");

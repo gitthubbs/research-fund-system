@@ -109,11 +109,12 @@ function openEdit(row) {
 }
 
 async function submit() {
+  const payload = { ...editing, realName: editing.name }
   if (editing.id) {
-    await userApi.update(editing)
+    await userApi.update(payload)
     ElMessage.success('用户已更新')
   } else {
-    await userApi.add(editing)
+    await userApi.add(payload)
     ElMessage.success('用户已新增')
   }
   visible.value = false

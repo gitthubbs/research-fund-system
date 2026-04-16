@@ -17,6 +17,8 @@ public class ProjectDetailVO {
     private Integer status;
     private String statusText;
     private String auditRemark;
+    private LocalDate startDate; // ★ 新增
+    private LocalDate endDate;   // ★ 新增
     private List<MilestoneVO> milestones;
     private List<BudgetDetailVO> budgets;
     
@@ -26,6 +28,7 @@ public class ProjectDetailVO {
         private String stage;
         private String content;
         private String date;
+        private String type; // ★ 新增：success, primary, info
     }
     
     @Data
