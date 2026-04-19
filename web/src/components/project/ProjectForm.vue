@@ -57,16 +57,7 @@
         </el-form-item>
       </el-col>
 
-      <el-col :span="24" v-if="isAdmin && localModel.id">
-        <el-form-item label="绩效等级" prop="performance">
-          <el-select v-model="localModel.performance" style="width: 100%">
-            <el-option label="优" value="优" />
-            <el-option label="良" value="良" />
-            <el-option label="中" value="中" />
-            <el-option label="差" value="差" />
-          </el-select>
-        </el-form-item>
-      </el-col>
+
     </el-row>
   </el-form>
 </template>

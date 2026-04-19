@@ -1,9 +1,14 @@
 <template>
   <div class="page">
-    <div class="toolbar">
       <div>
         <h2>项目审核</h2>
         <p class="muted">处理科研人员提交的项目立项申请。</p>
+      </div>
+      <div class="filter-area">
+        <span class="filter-label">按负责人筛选:</span>
+        <el-select v-model="filterPrincipal" placeholder="全部负责人" clearable style="width: 200px">
+          <el-option v-for="name in principalOptions" :key="name" :label="name" :value="name" />
+        </el-select>
       </div>
     </div>
 
@@ -15,6 +20,11 @@
         <el-table-column label="总预算" width="150">
           <template #default="{ row }">{{ formatCurrency(row.totalBudget) }}</template>
         </el-table-column>
+        <el-table-column prop="status" label="审核环节" width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.status === '待结题验收' ? 'warning' : 'primary'">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="updateTime" label="申请时间" width="180" />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
@@ -25,7 +35,7 @@
     </el-card>
 
     <!-- 审核弹窗 -->
-    <el-dialog v-model="visible" title="项目立项审核" width="640px" destroy-on-close>
+    <el-dialog v-model="visible" :title="currentProject?.status === '待结题验收' ? '项目结题验收审核' : '项目立项审核'" width="640px" destroy-on-close>
       <div v-if="currentProject" class="audit-content">
         <el-descriptions title="申请信息详情" :column="2" border size="small">
           <el-descriptions-item label="项目名称" :span="2">{{ currentProject.projectName }}</el-descriptions-item>
@@ -43,12 +53,18 @@
 
         <el-form :model="auditForm" label-position="top">
           <el-form-item label="审核结果" required>
-            <el-radio-group v-model="auditForm.status">
-              <el-radio :label="2" border>通过</el-radio>
-              <el-radio :label="3" border>驳回</el-radio>
+            <!-- 针对立项审核 -->
+            <el-radio-group v-if="currentProject.status === '待审核'" v-model="auditForm.status">
+              <el-radio :label="2" border>予以立项 (通过)</el-radio>
+              <el-radio :label="3" border>不予立项 (驳回)</el-radio>
+            </el-radio-group>
+            <!-- 针对结题验收审核 -->
+            <el-radio-group v-if="currentProject.status === '待结题验收'" v-model="auditForm.status">
+              <el-radio :label="5" border>准予结题归档 (通过)</el-radio>
+              <el-radio :label="4" border>退回重新整改 (驳回)</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="审核意见" :required="auditForm.status === 3">
+          <el-form-item label="审核意见" :required="auditForm.status === 3 || auditForm.status === 4">
             <el-input 
               v-model="auditForm.auditRemark" 
               type="textarea" 
@@ -63,7 +79,6 @@
         <el-button type="primary" @click="handleAudit" :loading="submitting">确认</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
@@ -83,9 +98,23 @@ const auditForm = reactive({
   auditRemark: ''
 })
 
-const auditProjects = computed(() => 
-  projects.value.filter(p => p.status === '待审核')
-)
+const filterPrincipal = ref('')
+
+const principalOptions = computed(() => {
+  const names = projects.value
+    .filter(p => p.status === '待审核' || p.status === '待结题验收')
+    .map(p => p.principalName)
+    .filter(name => name != null)
+  return [...new Set(names)]
+})
+
+const auditProjects = computed(() => {
+  let list = projects.value.filter(p => p.status === '待审核' || p.status === '待结题验收')
+  if (filterPrincipal.value) {
+    list = list.filter(p => p.principalName === filterPrincipal.value)
+  }
+  return list
+})
 
 async function loadData() {
   const res = await projectApi.getList()
@@ -95,14 +124,14 @@ async function loadData() {
 function openAudit(row) {
   currentProject.value = row
   auditForm.id = row.id
-  auditForm.status = 2
+  auditForm.status = row.status === '待结题验收' ? 5 : 2
   auditForm.auditRemark = ''
   visible.value = true
 }
 
 async function handleAudit() {
-  if (auditForm.status === 3 && !auditForm.auditRemark.trim()) {
-    ElMessage.warning('驳回时必须填写审核意见')
+  if ((auditForm.status === 3 || auditForm.status === 4) && !auditForm.auditRemark.trim()) {
+    ElMessage.warning('驳回时必须填写审核指导意见')
     return
   }
 
@@ -129,4 +158,6 @@ onMounted(loadData)
 .price { color: #e11d48; font-weight: 600; font-size: 15px; }
 .audit-content :deep(.el-descriptions__title) { font-size: 15px; color: #334155; }
 .audit-content :deep(.el-divider__text) { font-weight: 600; color: #64748b; }
+.filter-area { display: flex; align-items: center; gap: 12px; }
+.filter-label { font-size: 14px; color: #64748b; font-weight: 600; }
 </style>

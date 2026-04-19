@@ -18,4 +18,6 @@ public class ExpenditureListItemVO {
     private Integer status; // ★ 新增
     private String applicantName; // ★ 新增
     private String auditRemark; // ★ 新增
+    private Integer isRead; // ★ 新增
+    private String createTime; // ★ 新增
 }

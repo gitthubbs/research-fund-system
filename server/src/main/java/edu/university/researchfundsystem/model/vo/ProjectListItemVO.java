@@ -18,11 +18,12 @@ public class ProjectListItemVO {
     private LocalDate endDate;
     private BigDecimal totalBudget;
     private String status;
-    private String performance;
+
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
     private BigDecimal spentAmount;
     private BigDecimal executionRate;
+    private java.util.List<String> intelligentTags;
 }

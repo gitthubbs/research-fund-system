@@ -5,14 +5,39 @@
       <div class="hero-content">
         <div>
           <p class="eyebrow">{{ roleLabel(user?.role) }}工作台</p>
-          <h1>科研经费管理看板</h1>
-          <p class="subtitle">{{ user?.role === 'admin' ? '围绕项目执行率、分类占比与月度趋势做统一监控。' : '查看您负责的项目预算执行情况与月度支出趋势。' }}</p>
+          <h1>{{ currentDashboardTitle }}</h1>
+          <p class="subtitle">{{ dashboardSubtitle }}</p>
         </div>
         <div class="hero-actions">
-          <div v-if="user?.role === 'admin' && statsOverview.snapshotTime" class="update-time">
+          <!-- ★ 新增：管理员人员切换器 -->
+          <div v-if="user?.role === 'admin'" class="researcher-selector">
+            <span class="selector-label">监控视角：</span>
+            <el-select 
+              v-model="selectedResearcherId" 
+              placeholder="全校概览 (快照)" 
+              clearable 
+              filterable
+              @change="handleResearcherChange"
+              style="width: 220px"
+              class="custom-select"
+            >
+              <template #prefix>
+                <el-icon><User /></el-icon>
+              </template>
+              <el-option label="全校总览 (全局)" :value="null" />
+              <el-option
+                v-for="item in researcherList"
+                :key="item.id"
+                :label="item.name + ' (' + item.department + ')'"
+                :value="item.id"
+              />
+            </el-select>
+          </div>
+
+          <div v-if="user?.role === 'admin' && !selectedResearcherId && statsOverview.snapshotTime" class="update-time">
             最后更新于: {{ statsOverview.snapshotTime }}
           </div>
-          <el-button v-if="user?.role === 'admin'" type="primary" :loading="syncLoading" :icon="Refresh" @click="manualSync">
+          <el-button v-if="user?.role === 'admin' && !selectedResearcherId" type="primary" :loading="syncLoading" :icon="Refresh" @click="manualSync">
             同步快照数据
           </el-button>
         </div>
@@ -32,10 +57,50 @@
         </el-col>
       </el-row>
 
+      <!-- ★ 新增：全局风险监控概览（仅管理员全校视图可见） -->
+      <div v-if="user?.role === 'admin' && !selectedResearcherId" class="risk-dashboard">
+        <div class="section-title">全校执行风险监控</div>
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="8">
+            <div class="risk-card danger" @click="router.push('/projects')">
+              <div class="risk-icon"><el-icon><WarningFilled /></el-icon></div>
+              <div class="risk-info">
+                <div class="risk-value">{{ globalRisk.overdueProjects || 0 }}</div>
+                <div class="risk-label">已逾期未结题项目</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <div class="risk-card warning" @click="router.push('/projects')">
+              <div class="risk-icon"><el-icon><Timer /></el-icon></div>
+              <div class="risk-info">
+                <div class="risk-value">{{ globalRisk.alertProjects || 0 }}</div>
+                <div class="risk-label">临近到期项目 (20天内)</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <div class="risk-card info" @click="router.push('/projects')">
+              <div class="risk-icon"><el-icon><TrendCharts /></el-icon></div>
+              <div class="risk-info">
+                <div class="risk-value">{{ globalRisk.laggingProjects || 0 }}</div>
+                <div class="risk-label">严重执行滞后项目 (偏差>30%)</div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+
       <el-row :gutter="16" style="margin-top: 20px">
         <!-- ★ 图表优化：横向双维度对比图 -->
         <el-col :xs="24" :lg="16">
-          <ChartCard title="项目执行与进度对比" subtitle="决策支持：对比当前经费执行与时间推移" :loading="loading">
+          <ChartCard 
+            :title="chartTitleProject" 
+            :subtitle="chartSubtitleProject" 
+            :loading="loading">
+            <template #extra v-if="user?.role === 'admin' && !selectedResearcherId">
+               <el-button link type="primary" @click="router.push('/projects')">查看全部项目 <el-icon><Right /></el-icon></el-button>
+            </template>
             <EChartsPanel 
               v-if="projectExecution.length" 
               :option="barOption" 
@@ -180,9 +245,10 @@ import { ElMessage } from 'element-plus'
 import { 
   Refresh, MagicStick, WarningFilled, 
   BellFilled, InfoFilled, CircleCheck,
-  ArrowRight, Right
+  ArrowRight, Right, User, Timer, TrendCharts
 } from '@element-plus/icons-vue'
 import { statisticsApi } from '@/api/statisticsApi'
+import { userApi } from '@/api/userApi'
 import EChartsPanel from '@/components/charts/EChartsPanel.vue'
 import ChartCard from '@/components/charts/ChartCard.vue'
 import { getUser } from '@/utils/auth'
@@ -200,9 +266,37 @@ const categoryShare = ref([])
 const advices = ref([])
 const trendData = ref({ months: [], actualData: [], forecast: {}, baseline: 0 })
 const statsOverview = ref({ projectCount: 0, totalSpent: 0, rate: 0, snapshotTime: '' })
+const globalRisk = ref({ overdueProjects: 0, laggingProjects: 0, alertProjects: 0 })
 
 // 交互状态
 const expandedGroups = ref([])
+const selectedResearcherId = ref(null)
+const researcherList = ref([])
+
+const currentDashboardTitle = computed(() => {
+  if (!selectedResearcherId.value) return '科研经费管理看板'
+  const researcher = researcherList.value.find(r => r.id === selectedResearcherId.value)
+  return `${researcher?.name || '未知人员'} 的科研面板`
+})
+
+const dashboardSubtitle = computed(() => {
+  if (selectedResearcherId.value) return '正在以科研负责人视角查看其实时经费执行情况。'
+  return user.value?.role === 'admin' 
+    ? '全局宏观数据与核心高风险异常预警系统' 
+    : '查看您负责的项目预算执行情况与月度支出趋势。'
+})
+
+const chartTitleProject = computed(() => {
+  return (!selectedResearcherId.value && user.value?.role === 'admin') 
+    ? '异常监控：重点关注项目 (执行异常 Top 10)'
+    : '项目执行与进度对比'
+})
+
+const chartSubtitleProject = computed(() => {
+  return (!selectedResearcherId.value && user.value?.role === 'admin') 
+    ? '智能筛选时间进度与经费支出偏差最大的高风险项目'
+    : '决策支持：对比经费执行率与自然时间进度'
+})
 
 const isLagging = computed(() => {
   if (!projectExecution.value.length) return false
@@ -235,15 +329,28 @@ const groupedAdvices = computed(() => {
 // 加载数据
 async function loadSummary() {
   loading.value = true
+  const rid = selectedResearcherId.value
   try {
-    const [overviewResp, projectResp, categoryResp, monthlyResp] = await Promise.all([
-      statisticsApi.getOverview(),
-      statisticsApi.getProjectExecution(),
-      statisticsApi.getCategoryShare(),
-      statisticsApi.getMonthly()
-    ]).catch(() => [{}, {}, {}, {}])
+    const promises = [
+      statisticsApi.getOverview(rid),
+      statisticsApi.getProjectExecution(rid),
+      statisticsApi.getCategoryShare(rid),
+      statisticsApi.getMonthly(rid)
+    ]
+    if (user.value?.role === 'admin' && !rid) {
+      promises.push(statisticsApi.getGlobalRisk())
+    } else {
+      promises.push(Promise.resolve({ data: {} }))
+    }
+
+    const [overviewResp, projectResp, categoryResp, monthlyResp, riskResp] = await Promise.all(promises).catch(() => [{}, {}, {}, {}, {}])
 
     statsOverview.value = overviewResp.data || { projectCount: 0, totalSpent: 0, rate: 0, snapshotTime: '' }
+    
+    // 全局风险数据
+    if (user.value?.role === 'admin' && !rid && riskResp.data) {
+      globalRisk.value = riskResp.data
+    }
     
     // 注入多维数据
     projectExecution.value = (projectResp.data || []).reverse().map(i => ({
@@ -261,10 +368,12 @@ async function loadSummary() {
 }
 
 async function loadAdvices() {
-  if (user.value?.role !== 'researcher') return
+  // 管理员在选择了科研人员时，也可以查看该人员的助手建议
+  if (user.value?.role !== 'researcher' && !selectedResearcherId.value) return
+  
   adviceLoading.value = true
   try {
-    const res = await statisticsApi.getAssistantAdvice()
+    const res = await statisticsApi.getAssistantAdvice(selectedResearcherId.value)
     advices.value = res.data || []
     // 默认展开第一个有内容的组
     if (advices.value.length > 0) {
@@ -276,6 +385,19 @@ async function loadAdvices() {
   } finally {
     adviceLoading.value = false
   }
+}
+
+async function fetchResearchers() {
+  if (user.value?.role !== 'admin') return
+  try {
+    const res = await userApi.getList()
+    researcherList.value = res.data.filter(u => u.role === 'researcher')
+  } catch (e) { console.error('Failed to fetch researchers', e) }
+}
+
+function handleResearcherChange() {
+  loadSummary()
+  loadAdvices()
 }
 
 // 交互逻辑
@@ -442,7 +564,11 @@ const pieOption = computed(() => ({
   ]
 }))
 
-onMounted(() => { loadSummary(); loadAdvices(); })
+onMounted(() => { 
+  loadSummary(); 
+  loadAdvices(); 
+  fetchResearchers();
+})
 </script>
 
 <style scoped>
@@ -450,6 +576,103 @@ onMounted(() => { loadSummary(); loadAdvices(); })
 .hero { padding: 32px; border-radius: 28px; background: linear-gradient(135deg, #f0f7ff, #e0f2fe); }
 .eyebrow { color: #2563eb; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 13px; }
 .metric-card { border-radius: 20px; border: none; }
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.researcher-selector {
+  display: flex;
+  align-items: center;
+  background: rgba(37, 99, 235, 0.05);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.selector-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-right: 12px;
+}
+
+.custom-select :deep(.el-input__wrapper) {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* 全球风险卡片样式 */
+.risk-dashboard {
+  margin-top: 24px;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+.risk-card {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #f1f5f9;
+}
+.risk-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+.risk-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 16px;
+}
+.risk-info {
+  flex: 1;
+}
+.risk-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.risk-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.risk-card.danger .risk-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.risk-card.danger:hover { border-color: rgba(239, 68, 68, 0.3); }
+.risk-card.danger .risk-value { color: #ef4444; }
+
+.risk-card.warning .risk-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.risk-card.warning:hover { border-color: rgba(245, 158, 11, 0.3); }
+.risk-card.warning .risk-value { color: #f59e0b; }
+
+.risk-card.info .risk-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.risk-card.info:hover { border-color: rgba(59, 130, 246, 0.3); }
+.risk-card.info .risk-value { color: #3b82f6; }
 
 .float-assistant-trigger { position: fixed; right: 40px; bottom: 40px; cursor: pointer; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .ai-sphere { width: 60px; height: 60px; border-radius: 30px; background: linear-gradient(135deg, #8b5cf6, #6366f1); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3); }

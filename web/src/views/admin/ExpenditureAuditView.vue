@@ -8,8 +8,27 @@
       <el-tag type="info" size="large">待处理申请: {{ pendingCount }}</el-tag>
     </div>
 
+    <!-- ★ 新增筛选区块 -->
+    <div class="filter-row">
+      <el-form :inline="true" size="default">
+        <el-form-item label="按负责人筛选">
+          <el-select v-model="filters.applicant" placeholder="请选择负责人" clearable style="width: 180px">
+            <el-option v-for="name in applicantOptions" :key="name" :label="name" :value="name" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="按项目筛选">
+          <el-select v-model="filters.project" placeholder="请选择项目" clearable style="width: 240px">
+            <el-option v-for="name in projectOptions" :key="name" :label="name" :value="name" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button @click="resetFilters">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+
     <el-card shadow="never">
-      <el-table :data="rows" v-loading="loading" empty-text="当前没有待处理的申请">
+      <el-table :data="filteredRows" v-loading="loading" empty-text="当前没有匹配的待处理申请">
         <el-table-column prop="projectName" label="所属项目" min-width="180" show-overflow-tooltip />
         <el-table-column prop="categoryName" label="支出科目" width="130" />
         <el-table-column label="报销金额" width="140">
@@ -40,14 +59,42 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { expenditureApi } from '@/api/expenditureApi'
 import { formatCurrency } from '@/utils/format'
 
 const rows = ref([])
 const loading = ref(false)
-const pendingCount = computed(() => rows.value.length)
+const pendingCount = computed(() => filteredRows.value.length)
+
+const filters = reactive({
+  applicant: '',
+  project: ''
+})
+
+const applicantOptions = computed(() => {
+  const names = rows.value.map(r => r.applicantName).filter(n => n != null)
+  return [...new Set(names)]
+})
+
+const projectOptions = computed(() => {
+  const names = rows.value.map(r => r.projectName).filter(n => n != null)
+  return [...new Set(names)]
+})
+
+const filteredRows = computed(() => {
+  return rows.value.filter(r => {
+    const matchApplicant = !filters.applicant || r.applicantName === filters.applicant
+    const matchProject = !filters.project || r.projectName === filters.project
+    return matchApplicant && matchProject
+  })
+})
+
+function resetFilters() {
+  filters.applicant = ''
+  filters.project = ''
+}
 
 async function loadData() {
   loading.value = true
@@ -117,6 +164,19 @@ onMounted(loadData)
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  background-color: #f8fafc;
+  padding: 16px 20px 0;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.filter-row :deep(.el-form-item) {
+  margin-bottom: 16px;
 }
 
 .header h2 {

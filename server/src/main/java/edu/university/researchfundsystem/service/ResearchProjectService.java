@@ -34,4 +34,10 @@ public interface ResearchProjectService extends IService<ResearchProject> {
     boolean confirmBudget(Long id);
 
     boolean auditProject(Long id, Integer status, String auditRemark);
+
+    // ★ 新增
+    /**
+     * 结题验收：将项目状态改为已结题 (状态由 4 变为 5)
+     */
+    boolean finishProject(Long id);
 }

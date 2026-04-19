@@ -5,10 +5,7 @@
         <p class="eyebrow">项目详情</p>
         <div class="title-row">
           <h2>{{ project.projectName }}</h2>
-          <div class="performance-indicator">
-            <el-rate :model-value="rateValue" disabled />
-            <el-tag :type="tagType" size="small" effect="plain">{{ project.performance }}</el-tag>
-          </div>
+
         </div>
         <p class="muted">{{ project.projectCode }} · 负责人 {{ project.principalName }}</p>
       </div>
@@ -43,13 +40,23 @@
         </el-step>
       </el-steps>
     </el-card>
+    
+    <!-- ★ 新增：逾期结题强提醒 -->
+    <el-alert
+      v-if="project.status === 4 && isOverdue"
+      title="项目执行已逾期"
+      type="warning"
+      description="当前项目已达到结束日期，建议您尽快核实支出数据并提交结题审计。"
+      show-icon
+      :closable="false"
+      effect="dark"
+    />
 
     <!-- ★ 修改：仅执行中或已结题的项目显示偏移分析 -->
     <el-card shadow="never" class="analysis-card" v-if="project.status >= 4 && project.startDate && project.endDate">
       <template #header>
         <div class="card-header">
           <span>执行偏移分析</span>
-          <el-tag :type="analysisResult.tagType" effect="dark">{{ analysisResult.status }}</el-tag>
         </div>
       </template>
       
@@ -83,13 +90,21 @@
       <template #header>
         <div class="card-header">
           <span>预算执行明细 (项目总额：{{ formatCurrency(totalExecution.budget) }})</span>
-          <el-button 
-            v-if="project.status === 4"
-            type="primary" 
-            plain
-            size="small"
-            @click="router.push({ path: '/expenditures/add', query: { projectId: project.id } })"
-          >去报销录入</el-button>
+          <div class="actions">
+            <el-button 
+              v-if="project.status === 4 && user.role !== 'admin'"
+              type="primary" 
+              plain
+              size="small"
+              @click="router.push({ path: '/expenditures/add', query: { projectId: project.id } })"
+            >去报销录入</el-button>
+            <el-button 
+              v-if="project.status === 4 && user.role !== 'admin'"
+              type="success" 
+              size="small"
+              @click="handleFinish"
+            >申请结题</el-button>
+          </div>
         </div>
       </template>
       <el-table :data="project.budgets" empty-text="暂无数据">
@@ -118,17 +133,19 @@
 
 <script setup>
 import { computed, onMounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router' // ★ 修改
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus' // ★ 新增
 import { projectApi } from '@/api/projectApi'
 import { formatCurrency, formatPercent } from '@/utils/format'
+import { getUser } from '@/utils/auth' // ★ 新增
 
 const route = useRoute()
 const router = useRouter() // ★ 修改
+const user = getUser() || {} // ★ 新增获取当前用户
 const project = reactive({
   projectName: '',
   projectCode: '',
   principalName: '',
-  performance: '中',
   status: 0,      // ★ 新增
   startDate: '', // ★ 新增
   endDate: '',   // ★ 新增
@@ -136,15 +153,13 @@ const project = reactive({
   budgets: []
 })
 
-const rateMap = { 优: 5, 良: 4, 中: 3, 差: 2 }
-const typeMap = { 优: 'success', 良: 'primary', 中: 'warning', 差: 'danger' }
-const rateValue = computed(() => rateMap[project.performance] || 3)
-const tagType = computed(() => typeMap[project.performance] || 'info')
+
 
 // ★ 新增：计算当前进度索引
 const activeStep = computed(() => {
   if (!project.milestones || project.milestones.length === 0) return 0
-  const index = project.milestones.findIndex((m) => m.type === 'primary' || m.type === 'danger')
+  // 增加 'warning' 类型核心识别，确保逾期状态能正确识别为当前步骤
+  const index = project.milestones.findIndex((m) => ['primary', 'danger', 'warning'].includes(m.type))
   if (index !== -1) return index
   // 如果全是 success，则高亮全部（返回 4 或更高）
   if (project.milestones.every((m) => m.type === 'success')) return project.milestones.length
@@ -162,6 +177,15 @@ const timeProgress = computed(() => {
   if (now >= end) return 100
 
   return Math.round(((now - start) / (end - start)) * 100)
+})
+
+// ★ 新增：判断是否逾期
+const isOverdue = computed(() => {
+  if (!project.endDate || project.status !== 4) return false
+  const end = new Date(project.endDate).getTime()
+  const now = new Date().getTime()
+  // 如果当前时间 >= 结束日期（或当天），判定为逾期
+  return now >= end
 })
 
 // ★ 新增：偏移分析结果
@@ -245,6 +269,27 @@ async function loadDetail() {
   Object.assign(project, response.data)
 }
 
+// ★ 新增：结题处理
+const handleFinish = () => {
+  ElMessageBox.confirm(
+    '确认项已完成所有任务并申请结题验收吗？申请将提交至管理员进行审核，期间将冻结经费操作。',
+    '项目结题确认',
+    {
+      confirmButtonText: '提交结题申请',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      await projectApi.finish(project.id)
+      ElMessage.success('结题验收申请已提交')
+      loadDetail()
+    } catch (error) {
+      ElMessage.error('操作失败，请重试')
+    }
+  }).catch(() => {})
+}
+
 onMounted(loadDetail)
 </script>
 
@@ -268,14 +313,7 @@ onMounted(loadDetail)
   margin-bottom: 4px;
 }
 
-.performance-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8fafc;
-  padding: 4px 12px;
-  border-radius: 20px;
-}
+
 
 .summary-extra {
   display: flex;

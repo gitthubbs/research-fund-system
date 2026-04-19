@@ -25,6 +25,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
@@ -47,21 +48,22 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
     public List<ProjectListItemVO> listForView() {
         Long currentUserId = SecurityUtils.getCurrentUserId(request);
         SysUser user = currentUserId != null ? userService.getById(currentUserId) : null;
-        
+
         LambdaQueryWrapper<ResearchProject> queryWrapper = new LambdaQueryWrapper<>();
         if (user != null && "researcher".equals(user.getRole())) {
             queryWrapper.eq(ResearchProject::getPrincipalId, currentUserId);
         }
-        
+
         List<ResearchProject> projects = this.list(queryWrapper);
         Map<Long, String> principalNameMap = buildPrincipalNameMap(projects);
-        
+
         // 批量查询所有相关项目的支出总额，避免 N+1 问题
         List<Long> projectIds = projects.stream().map(ResearchProject::getId).collect(Collectors.toList());
         Map<Long, BigDecimal> projectSpentMap = new HashMap<>();
         if (!projectIds.isEmpty()) {
             LambdaQueryWrapper<FundExpenditure> expWrapper = new LambdaQueryWrapper<>();
-            expWrapper.in(FundExpenditure::getProjectId, projectIds);
+            expWrapper.in(FundExpenditure::getProjectId, projectIds)
+                    .eq(FundExpenditure::getStatus, 1);
             List<FundExpenditure> allExpenditures = expenditureMapper.selectList(expWrapper);
             projectSpentMap = allExpenditures.stream()
                     .collect(Collectors.groupingBy(FundExpenditure::getProjectId,
@@ -80,9 +82,8 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
             item.setEndDate(project.getEndDate());
             item.setTotalBudget(project.getTotalBudget());
             item.setStatus(calculateStatus(project));
-            item.setPerformance(calculatePerformance(project.getId()));
             item.setUpdateTime(project.getUpdateTime());
-            
+
             // 填充支出和执行率
             BigDecimal spentAmount = finalProjectSpentMap.getOrDefault(project.getId(), BigDecimal.ZERO);
             item.setSpentAmount(spentAmount);
@@ -92,7 +93,46 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
             } else {
                 item.setExecutionRate(BigDecimal.ZERO);
             }
-            
+
+            // ★ 新增：智能标签逻辑
+            List<String> tags = new ArrayList<>();
+            Integer status = project.getStatus();
+            if (status != null && status == 4) {
+                LocalDate now = LocalDate.now();
+                // 1. 逾期 / 临期
+                if (project.getEndDate() != null) {
+                    if (now.isAfter(project.getEndDate())) {
+                        tags.add("逾期");
+                    } else if (now.plusDays(20).isAfter(project.getEndDate())) {
+                        tags.add("临期");
+                    }
+                }
+                // 2. 余额告急 (>90%)
+                if (item.getExecutionRate() != null && item.getExecutionRate().compareTo(new BigDecimal("90")) > 0) {
+                    tags.add("余额告急");
+                }
+                // 3. 执行滞后 (时间进度领先执行率 30%)
+                if (project.getStartDate() != null && project.getEndDate() != null) {
+                    long totalDays = ChronoUnit.DAYS.between(project.getStartDate(), project.getEndDate());
+                    if (totalDays > 0) {
+                        long elapsedDays = ChronoUnit.DAYS.between(project.getStartDate(), now);
+                        long effectiveElapsed = Math.max(0, Math.min(totalDays, elapsedDays));
+                        BigDecimal timeProgress = new BigDecimal(effectiveElapsed)
+                                .divide(new BigDecimal(totalDays), 4, RoundingMode.HALF_UP)
+                                .multiply(new BigDecimal("100"));
+                        BigDecimal execRate = item.getExecutionRate() != null ? item.getExecutionRate() : BigDecimal.ZERO;
+                        if (timeProgress.subtract(execRate).compareTo(new BigDecimal("30")) > 0 && timeProgress.compareTo(new BigDecimal("10")) > 0) {
+                            tags.add("执行滞后");
+                        }
+                    }
+                }
+            } else if (status != null && status < 4) {
+                if (status == 0) tags.add("待提交");
+                if (status == 1) tags.add("待审核");
+                if (status == 2) tags.add("待启动");
+            }
+            item.setIntelligentTags(tags);
+
             return item;
         }).collect(Collectors.toList());
     }
@@ -109,7 +149,6 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         detail.setProjectName(project.getProjectName());
         detail.setProjectCode(project.getProjectCode());
         detail.setPrincipalName(resolvePrincipalName(project.getPrincipalId()));
-        detail.setPerformance(calculatePerformance(project.getId()));
 
         // ★ 重构：动态生成项目里程碑
         List<ProjectDetailVO.MilestoneVO> milestones = new ArrayList<>();
@@ -148,9 +187,33 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         // 4. 项目结题
         ProjectDetailVO.MilestoneVO m4 = new ProjectDetailVO.MilestoneVO();
         m4.setStage("结题验收");
-        m4.setContent(status == 5 ? "项目已顺利结题" : "项目执行监控中");
-        m4.setType(status == 5 ? "success" : (status == 4 ? "primary" : "info"));
-        m4.setDate(status == 5 ? project.getEndDate().format(dtf) : (project.getEndDate() != null ? project.getEndDate().format(dtf) : "-"));
+
+        // ★ 修改：增加待结题验收(6)的进度
+        if (status == 5) {
+            m4.setContent("项目已顺利结题");
+            m4.setType("success");
+            m4.setDate(project.getEndDate() != null ? project.getEndDate().format(dtf) : "-");
+        } else if (status == 6) {
+            m4.setContent("结题申请已提交，等待管理员验收");
+            m4.setType("primary");
+            m4.setDate(project.getUpdateTime() != null ? project.getUpdateTime().format(dtf) : "-");
+        } else if (status == 4) {
+            // 检查是否已到期 (当天或之后)
+            boolean isOverdue = project.getEndDate() != null && !LocalDate.now().isBefore(project.getEndDate());
+            if (project.getAuditRemark() != null && !project.getAuditRemark().trim().isEmpty() && project.getUpdateTime() != null) {
+                // 退回修改的提示
+                m4.setContent("结题审查被退回：" + project.getAuditRemark());
+                m4.setType("danger");
+            } else {
+                m4.setContent(isOverdue ? "已到期，待执行结题审计" : "项目执行监控中");
+                m4.setType(isOverdue ? "warning" : "info");
+            }
+            m4.setDate(project.getEndDate() != null ? project.getEndDate().format(dtf) : "-");
+        } else {
+            m4.setContent("等待项目执行完成");
+            m4.setType("info");
+            m4.setDate(project.getEndDate() != null ? project.getEndDate().format(dtf) : "-");
+        }
         milestones.add(m4);
 
         detail.setMilestones(milestones);
@@ -160,7 +223,8 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         List<FundBudget> budgets = budgetMapper.selectList(budgetWrapper);
 
         LambdaQueryWrapper<FundExpenditure> expenditureWrapper = new LambdaQueryWrapper<>();
-        expenditureWrapper.eq(FundExpenditure::getProjectId, id);
+        expenditureWrapper.eq(FundExpenditure::getProjectId, id)
+                .eq(FundExpenditure::getStatus, 1);
         List<FundExpenditure> expenditures = expenditureMapper.selectList(expenditureWrapper);
 
         List<ProjectDetailVO.BudgetDetailVO> budgetDetails = new ArrayList<>();
@@ -187,13 +251,13 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
             budgetDetails.add(budgetDetail);
         }
         detail.setBudgets(budgetDetails);
-        
+
         // 设置状态及审核信息
         detail.setStatus(project.getStatus());
         detail.setStatusText(calculateStatus(project));
         detail.setAuditRemark(project.getAuditRemark());
         detail.setStartDate(project.getStartDate()); // ★ 新增
-        detail.setEndDate(project.getEndDate());     // ★ 新增
+        detail.setEndDate(project.getEndDate()); // ★ 新增
 
         return detail;
     }
@@ -219,16 +283,26 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         if (project == null) {
             return false;
         }
-        // 只有待审核(1)状态可以进行审核
-        if (project.getStatus() == null || project.getStatus() != 1) {
-            return false;
+
+        // workflow A: 立项审核
+        if (project.getStatus() != null && project.getStatus() == 1) {
+            // 如果是审核通过(2)，如果是驳回(3)
+            project.setStatus(status);
+            project.setAuditRemark(remark);
+            project.setUpdateTime(LocalDateTime.now());
+            return this.updateById(project);
         }
-        // 如果是审核通过(原本传2)，现在对应状态 2 (待编制)
-        // 如果是驳回(原本传3)，依然对应状态 3
-        project.setStatus(status);
-        project.setAuditRemark(remark);
-        project.setUpdateTime(LocalDateTime.now());
-        return this.updateById(project);
+
+        // workflow B: 结题验收审批
+        if (project.getStatus() != null && project.getStatus() == 6) {
+            // 通过(5)，驳回回执行中(4)
+            project.setStatus(status);
+            project.setAuditRemark(remark);
+            project.setUpdateTime(LocalDateTime.now());
+            return this.updateById(project);
+        }
+
+        return false;
     }
 
     @Override
@@ -313,45 +387,26 @@ public class ResearchProjectServiceImpl extends ServiceImpl<ResearchProjectMappe
         if (status == 5) {
             return "已结题";
         }
+        if (status == 6) {
+            return "待结题验收";
+        }
 
         return "未知状态";
     }
 
-    private String calculatePerformance(Long projectId) {
-        if (projectId == null) {
-            return "中";
+    @Override
+    public boolean finishProject(Long id) {
+        ResearchProject project = this.getById(id);
+        if (project == null) {
+            return false;
         }
-        LambdaQueryWrapper<FundBudget> budgetWrapper = new LambdaQueryWrapper<>();
-        budgetWrapper.eq(FundBudget::getProjectId, projectId);
-        List<FundBudget> budgets = budgetMapper.selectList(budgetWrapper);
-        LambdaQueryWrapper<FundExpenditure> expenditureWrapper = new LambdaQueryWrapper<>();
-        expenditureWrapper.eq(FundExpenditure::getProjectId, projectId);
-        List<FundExpenditure> expenditures = expenditureMapper.selectList(expenditureWrapper);
-
-        BigDecimal totalBudget = budgets.stream()
-                .map(FundBudget::getBudgetAmount)
-                .filter(amount -> amount != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal spentAmount = expenditures.stream()
-                .map(FundExpenditure::getAmount)
-                .filter(amount -> amount != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (totalBudget.compareTo(BigDecimal.ZERO) <= 0) {
-            return "中";
+        // 只有执行中(4)状态可以结题
+        if (project.getStatus() == null || project.getStatus() != 4) {
+            return false;
         }
-
-        BigDecimal rate = spentAmount.multiply(new BigDecimal("100"))
-                .divide(totalBudget, 2, RoundingMode.HALF_UP);
-        if (rate.compareTo(new BigDecimal("95")) <= 0) {
-            return "优";
-        }
-        if (rate.compareTo(new BigDecimal("105")) <= 0) {
-            return "良";
-        }
-        if (rate.compareTo(new BigDecimal("120")) <= 0) {
-            return "中";
-        }
-        return "差";
+        project.setStatus(6); // 6 为待结题验收
+        project.setAuditRemark(""); // 清空可能的过往退回备注
+        project.setUpdateTime(LocalDateTime.now());
+        return this.updateById(project);
     }
 }

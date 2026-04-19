@@ -162,7 +162,7 @@ export async function handleMockRequest(config) {
   }
 
   if (method === 'post' && url === '/projects/create') {
-    const item = { ...body, id: nextId(db.projects), spentAmount: 0, status: '执行中', performance: '中', milestones: [] }
+    const item = { ...body, id: nextId(db.projects), spentAmount: 0, status: '执行中', milestones: [] }
     db.projects.push(item)
     setDb(db)
     return ok(item, '新增成功')

@@ -77,6 +77,7 @@ const user = computed(() => getUser() || { role: 'researcher' })
 const menus = computed(() => {
   if (user.value.role === 'admin') {
     return [
+      { path: '/dashboard', title: '工作台', icon: iconMap.DataBoard },
       { path: '/projects', title: '项目管理', icon: iconMap.FolderOpened },
       { path: '/projects/audit', title: '项目审核', icon: iconMap.Document },
       { path: '/expenditures/audit', title: '报销审核', icon: iconMap.Stamp },

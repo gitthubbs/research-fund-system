@@ -66,7 +66,8 @@ public class FundBudgetServiceImpl extends ServiceImpl<FundBudgetMapper, FundBud
         List<FundBudget> budgets = this.list(budgetWrapper);
 
         LambdaQueryWrapper<FundExpenditure> expenditureWrapper = new LambdaQueryWrapper<>();
-        expenditureWrapper.eq(FundExpenditure::getProjectId, projectId);
+        expenditureWrapper.eq(FundExpenditure::getProjectId, projectId)
+                .eq(FundExpenditure::getStatus, 1);
         List<FundExpenditure> expenditures = expenditureMapper.selectList(expenditureWrapper);
 
         ResearchProject project = projectService.getById(projectId);

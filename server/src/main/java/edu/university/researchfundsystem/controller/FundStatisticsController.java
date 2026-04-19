@@ -52,35 +52,40 @@ public class FundStatisticsController {
         return Result.success("Snapshot saved successfully");
     }
 
+    // ★ 新增：全局风险摘要
+    @GetMapping("/global-risk")
+    public Result<GlobalRiskSummaryVO> getGlobalRiskSummary() {
+        return Result.success(statisticsService.getGlobalRiskSummary());
+    }
+
     // ★ 新增：看板概览
     @GetMapping("/overview")
-    public Result<ExecutionRateVO> getOverview() {
-        return Result.success(statisticsService.getOverview(getFilteredUserId()));
+    public Result<ExecutionRateVO> getOverview(@RequestParam(required = false) Long researcherId) {
+        return Result.success(statisticsService.getOverview(getTargetUserId(researcherId)));
     }
 
     // ★ 新增：看板分类占比
     @GetMapping("/category-ratios")
-    public Result<List<CategoryAmountVO>> getCategoryRatios() {
-        return Result.success(statisticsService.getCategoryRatios(getFilteredUserId()));
+    public Result<List<CategoryAmountVO>> getCategoryRatios(@RequestParam(required = false) Long researcherId) {
+        return Result.success(statisticsService.getCategoryRatios(getTargetUserId(researcherId)));
     }
 
     // ★ 新增：看板月度趋势
     @GetMapping("/monthly-trend")
-    public Result<MonthlyTrendVO> getMonthlyTrend() {
-        return Result.success(statisticsService.getDashboardMonthlyTrend(getFilteredUserId()));
+    public Result<MonthlyTrendVO> getDashboardMonthlyTrend(@RequestParam(required = false) Long researcherId) {
+        return Result.success(statisticsService.getDashboardMonthlyTrend(getTargetUserId(researcherId)));
     }
 
     // ★ 新增：各项目执行率
     @GetMapping("/project-execution")
-    public Result<List<ExecutionRateVO>> getProjectExecutionRates() {
-        return Result.success(statisticsService.getProjectExecutionRates(getFilteredUserId()));
+    public Result<List<ExecutionRateVO>> getProjectExecutionRates(@RequestParam(required = false) Long researcherId) {
+        return Result.success(statisticsService.getProjectExecutionRates(getTargetUserId(researcherId)));
     }
 
     // ★ 新增：AI 助手建议
     @GetMapping("/assistant-advice")
-    public Result<List<AssistantAdviceVO>> getAssistantAdvice() {
-        Long userId = SecurityUtils.getCurrentUserId(request);
-        return Result.success(statisticsService.getAssistantAdvice(userId));
+    public Result<List<AssistantAdviceVO>> getAssistantAdvice(@RequestParam(required = false) Long researcherId) {
+        return Result.success(statisticsService.getAssistantAdvice(getTargetUserId(researcherId)));
     }
 
     // ★ 新增：标记建议已读
@@ -93,15 +98,33 @@ public class FundStatisticsController {
     }
 
     /**
-     * 根据角色获取过滤 ID：若是科研人员则返回其 ID，若是管理员则返回 null（看全局）
+     * 解析目标用户 ID。
+     * 只有管理员可以指定 researcherId；
+     * 科研人员强制只能看自己；
+     * 管理员未指定时返回 null（即看全局视图）。
+     */
+    private Long getTargetUserId(Long researcherId) {
+        Long currentUserId = SecurityUtils.getCurrentUserId(request);
+        if (currentUserId == null) return null;
+        SysUser user = userService.getById(currentUserId);
+        if (user == null) return null;
+
+        // 若是管理员且指定了 ID
+        if ("admin".equals(user.getRole()) && researcherId != null) {
+            return researcherId;
+        }
+        // 若是科研人员，强制看自己
+        if ("researcher".equals(user.getRole())) {
+            return currentUserId;
+        }
+        // 管理员默认看全局
+        return null;
+    }
+
+    /**
+     * 获取过滤 ID（兼容老逻辑，建议逐步弃用切换到 getTargetUserId）
      */
     private Long getFilteredUserId() {
-        Long userId = SecurityUtils.getCurrentUserId(request);
-        if (userId == null) return null;
-        SysUser user = userService.getById(userId);
-        if (user != null && "researcher".equals(user.getRole())) {
-            return userId;
-        }
-        return null;
+        return getTargetUserId(null);
     }
 }

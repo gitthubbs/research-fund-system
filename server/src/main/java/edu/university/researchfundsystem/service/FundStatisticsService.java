@@ -5,6 +5,7 @@ import edu.university.researchfundsystem.model.vo.ExecutionRateVO;
 import edu.university.researchfundsystem.model.vo.MonthlyTrendVO;
 import edu.university.researchfundsystem.model.vo.TrendVO;
 import edu.university.researchfundsystem.model.vo.AssistantAdviceVO;
+import edu.university.researchfundsystem.model.vo.GlobalRiskSummaryVO;
 
 import java.util.List;
 
@@ -59,6 +60,9 @@ public interface FundStatisticsService {
 
     // ★ 新增：看板月度趋势（支持按用户隔离）
     MonthlyTrendVO getDashboardMonthlyTrend(Long userId);
+
+    // ★ 新增：获取全局风险统计
+    GlobalRiskSummaryVO getGlobalRiskSummary();
 
     // ★ 新增：刷新全局统计快照
     void refreshGlobalSnapshot();

@@ -5,44 +5,47 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0ce6f99-430d-479e-b5b8-149ecfcf58ff" name="更改" comment="server &amp; web">
-      <change beforePath="$PROJECT_DIR$/.idea/MarsCodeWorkspaceAppSettings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MarsCodeWorkspaceAppSettings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/d997324d-345b-4e23-bd30-08ca7fff4e6a.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promt.md" beforeDir="false" afterPath="$PROJECT_DIR$/promt.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/server/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/ResearchFundSystemApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/ResearchFundSystemApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/common/Result.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/common/Result.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/FundBudgetController.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/FundBudgetController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/common/annotation/Log.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/common/annotation/Log.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/common/aspect/LogAspect.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/common/aspect/LogAspect.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/config/SecurityConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/FundExpenditureController.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/FundExpenditureController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/FundStatisticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/FundStatisticsController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/entity/FundExpenditure.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/entity/FundExpenditure.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/entity/FundStatisticsSnapshot.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/entity/FundStatisticsSnapshot.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/mapper/FundBudgetMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/mapper/FundBudgetMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/mapper/FundExpenditureMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/mapper/FundExpenditureMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ExecutionRateVO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ExecutionRateVO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/ResearchProjectController.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/controller/ResearchProjectController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ExpenditureListItemVO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ExpenditureListItemVO.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ProjectDetailVO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ProjectDetailVO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/FundBudgetService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/FundBudgetService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ProjectListItemVO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/model/vo/ProjectListItemVO.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/FundExpenditureService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/FundExpenditureService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/FundStatisticsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/FundStatisticsService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/ResearchProjectService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/ResearchProjectService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/FundBudgetServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/FundBudgetServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/FundExpenditureServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/FundExpenditureServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/FundStatisticsServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/FundStatisticsServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/ResearchProjectServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/ResearchProjectServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/系统设计书开发执行指令.md" beforeDir="false" afterPath="$PROJECT_DIR$/server/系统设计书开发执行指令.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/web/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/src/api/budgetApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/api/budgetApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/SysUserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/edu/university/researchfundsystem/service/impl/SysUserServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/api/expenditureApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/api/expenditureApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/api/projectApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/api/projectApi.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/api/statisticsApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/api/statisticsApi.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/components/common/Sidebar.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/components/common/Sidebar.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/src/router/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/router/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/components/project/PerformanceTag.vue" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/components/project/ProjectForm.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/components/project/ProjectForm.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/mock/database.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/mock/database.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/mock/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/mock/server.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/views/DashboardView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/DashboardView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/LoginView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/LoginView.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/views/ProjectDetailView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/ProjectDetailView.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/src/views/admin/UsersView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/UsersView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/admin/AdjustmentAuditView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/AdjustmentAuditView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/admin/BudgetManageView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/BudgetManageView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/admin/ExpenditureAuditView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/ExpenditureAuditView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/admin/ExpenditureMonitorView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/ExpenditureMonitorView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/admin/ProjectAuditView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/ProjectAuditView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/admin/ProjectManageView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/admin/ProjectManageView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/researcher/ExpenditureAddView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/researcher/ExpenditureAddView.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/src/views/researcher/ExpenditureRecordView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/researcher/ExpenditureRecordView.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/vite.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/vite.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/src/views/researcher/ProjectListView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/web/src/views/researcher/ProjectListView.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,8 +85,8 @@
 }</component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
-    "url": "https://github.com/gitthubbs/research-fund-system",
-    "accountId": "863bfe59-d3e4-4fc4-aadd-0896373a2a17"
+    "url": "https://github.com/gitthubbs/research-fund-system.git",
+    "accountId": "725960e6-fe86-48d2-8f0e-c26508690e4f"
   }
 }]]></component>
   <component name="KubernetesApiPersistence">{}</component>
@@ -109,41 +112,54 @@
     <option name="openDirectoriesWithSingleClick" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "master",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "E:/IdeaProjects/research-fund-system",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "模块",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
-    "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "D:\\IntelliJ IDEA 2026.1\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/IdeaProjects/research-fund-system&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;模块&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;D:\\IntelliJ IDEA 2026.1\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "mysql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mysql&quot;
     ]
   }
-}]]></component>
+}</component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="research-fund-system" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="research-fund-system" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -176,6 +192,7 @@
       <workItem from="1775981083739" duration="11000" />
       <workItem from="1776065113842" duration="1015000" />
       <workItem from="1776240434382" duration="1017000" />
+      <workItem from="1776613636519" duration="2423000" />
     </task>
     <task id="LOCAL-00001" summary="创建项目">
       <option name="closed" value="true" />

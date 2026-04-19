@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal; // ★ 新增
 import java.time.LocalDate; // ★ 新增
 import java.time.LocalDateTime; // ★ 新增
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ public class FundExpenditureServiceImpl extends ServiceImpl<FundExpenditureMappe
     private final SysUserService sysUserService; // ★ 新增
     private final FundStatisticsService statisticsService; // ★ 新增
     private final HttpServletRequest request;
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @Override
     public List<ExpenditureListItemVO> listByProjectForView(Long projectId) {
@@ -65,6 +67,10 @@ public class FundExpenditureServiceImpl extends ServiceImpl<FundExpenditureMappe
             item.setRemark(expenditure.getRemark());
             item.setStatus(expenditure.getStatus()); // ★ 修复：设置状态字段
             item.setAuditRemark(expenditure.getAuditRemark()); // ★ 新增
+            item.setIsRead(expenditure.getIsRead()); // ★ 新增集
+            if (expenditure.getCreateTime() != null) {
+                item.setCreateTime(expenditure.getCreateTime().format(dateTimeFormatter));
+            }
             return item;
         }).collect(Collectors.toList());
     }
@@ -151,6 +157,7 @@ public class FundExpenditureServiceImpl extends ServiceImpl<FundExpenditureMappe
             SysUser applicant = sysUserService.getById(expenditure.getApplicantId());
             item.setApplicantName(applicant != null ? applicant.getRealName() : "未知用户");
             item.setAuditRemark(expenditure.getAuditRemark()); // ★ 新增
+            item.setIsRead(expenditure.getIsRead()); // ★ 新增
 
             return item;
         }).collect(Collectors.toList());
@@ -216,7 +223,55 @@ public class FundExpenditureServiceImpl extends ServiceImpl<FundExpenditureMappe
             FundCategory category = categoryService.getById(expenditure.getCategoryId());
             vo.setCategoryName(category != null ? category.getCategoryName() : "未知科目");
             
+            vo.setAuditRemark(expenditure.getAuditRemark());
+            vo.setIsRead(expenditure.getIsRead());
+            if (expenditure.getCreateTime() != null) {
+                vo.setCreateTime(expenditure.getCreateTime().format(dateTimeFormatter));
+            }
+            
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ExpenditureListItemVO> findUserAlerts(Long userId) {
+        // 查询该用户申请的、待审核(0)或已驳回未读(2 & is_read=0)的项
+        LambdaQueryWrapper<FundExpenditure> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FundExpenditure::getApplicantId, userId)
+                .and(w -> w.eq(FundExpenditure::getStatus, 0)
+                        .or(sw -> sw.eq(FundExpenditure::getStatus, 2).eq(FundExpenditure::getIsRead, 0)))
+                .orderByDesc(FundExpenditure::getCreateTime);
+        
+        List<FundExpenditure> list = this.list(wrapper);
+        return list.stream().map(e -> {
+            ExpenditureListItemVO vo = new ExpenditureListItemVO();
+            vo.setId(e.getId());
+            vo.setProjectId(e.getProjectId());
+            vo.setAmount(e.getAmount());
+            vo.setStatus(e.getStatus());
+            vo.setAuditRemark(e.getAuditRemark());
+            vo.setIsRead(e.getIsRead());
+            vo.setRemark(e.getRemark());
+            if (e.getCreateTime() != null) {
+                vo.setCreateTime(e.getCreateTime().format(dateTimeFormatter));
+            }
+            
+            ResearchProject p = projectService.getById(e.getProjectId());
+            vo.setProjectName(p != null ? p.getProjectName() : "未知项目");
+            
+            FundCategory c = categoryService.getById(e.getCategoryId());
+            vo.setCategoryName(c != null ? c.getCategoryName() : "未知科目");
+            
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public void markAsRead(Long id) {
+        FundExpenditure expenditure = this.getById(id);
+        if (expenditure != null) {
+            expenditure.setIsRead(1);
+            this.updateById(expenditure);
+        }
     }
 }

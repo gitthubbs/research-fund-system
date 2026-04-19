@@ -211,11 +211,12 @@ public class FundStatisticsServiceImpl implements FundStatisticsService, Initial
                 .eq(FundExpenditure::getIsRead, 0);
         List<FundExpenditure> rejectedExps = expenditureMapper.selectList(expQuery);
         if (!rejectedExps.isEmpty()) {
+            Long firstPid = rejectedExps.get(0).getProjectId();
             advices.add(AssistantAdviceVO.builder()
                     .title("报销处理提醒")
                     .type("info")
                     .content("您有 " + rejectedExps.size() + " 笔报销申请被驳回，请查看驳回原因并及时处理。")
-                    .link("/expenditures")
+                    .link("/expenditures?projectId=" + firstPid)
                     .businessType(1)
                     .build());
         }
@@ -235,6 +236,34 @@ public class FundStatisticsServiceImpl implements FundStatisticsService, Initial
                     .link("/dashboard") // 假设在工作台或调剂列表页看
                     .businessType(2)
                     .build());
+        }
+
+        // 5. 扫描项目逾期与临期 (20天内)
+        List<ResearchProject> runningProjects = projectMapper.selectList(new LambdaQueryWrapper<ResearchProject>()
+                .eq(ResearchProject::getPrincipalId, userId)
+                .eq(ResearchProject::getStatus, 4));
+
+        LocalDate now = LocalDate.now();
+        for (ResearchProject rp : runningProjects) {
+            if (rp.getEndDate() == null) continue;
+
+            if (now.isAfter(rp.getEndDate())) {
+                // 逾期逻辑
+                advices.add(AssistantAdviceVO.builder()
+                        .title("项目逾期预警")
+                        .type("danger")
+                        .content("【" + rp.getProjectName() + "】已于 " + rp.getEndDate() + " 到期，请尽快提交结题申请并处理余款。")
+                        .link("/projects/" + rp.getId())
+                        .build());
+            } else if (now.plusDays(20).isAfter(rp.getEndDate())) {
+                // 临期逻辑 (20天内)
+                advices.add(AssistantAdviceVO.builder()
+                        .title("项目临期提醒")
+                        .type("warning")
+                        .content("【" + rp.getProjectName() + "】将于 " + rp.getEndDate() + " 到期（剩余不足20天），请注意支出窗口。")
+                        .link("/projects/" + rp.getId())
+                        .build());
+            }
         }
 
         return advices;
@@ -336,9 +365,66 @@ public class FundStatisticsServiceImpl implements FundStatisticsService, Initial
             results.add(rate);
         }
 
-        // ★ 按执行率从高到低排序，突出风险项目
+        // ★ 按执行率从低到高（或考虑滞后程度）或者执行率本身排序
+        // 这里按经费执行率进行降序排列（执行率越高且若进度慢则偏差大，不过简单点直接按执行率最高排也行，或者按时间偏离度，这里先保持原逻辑排序）
         results.sort((a, b) -> b.getRate().compareTo(a.getRate()));
+
+        // 如果是全局概览（userId == null），仅返回前 10 条高风险或高执行率项目，避免页面过载
+        if (userId == null && results.size() > 10) {
+            results = results.subList(0, 10);
+        }
+
         return results;
+    }
+
+    @Override
+    public GlobalRiskSummaryVO getGlobalRiskSummary() {
+        int overdue = 0;
+        int lagging = 0;
+        int alert = 0;
+        
+        LocalDate now = LocalDate.now();
+
+        // 仅关注执行中状态的项目
+        List<ResearchProject> projects = projectMapper.selectList(
+                new LambdaQueryWrapper<ResearchProject>().eq(ResearchProject::getStatus, 4)
+        );
+
+        for (ResearchProject rp : projects) {
+            // 时间维度风险
+            if (rp.getEndDate() != null) {
+                if (now.isAfter(rp.getEndDate())) {
+                    overdue++;
+                } else if (now.plusDays(20).isAfter(rp.getEndDate())) {
+                    alert++;
+                }
+            }
+            
+            // 执行滞后风险：只简单比较时间进度和执行率 (与 AssistantAdvice 中的逻辑相似)
+            ExecutionRateVO rateVO = getExecutionRate(rp.getId(), null);
+            BigDecimal execRate = rateVO.getRate() != null ? rateVO.getRate() : BigDecimal.ZERO;
+            
+            if (rp.getStartDate() != null && rp.getEndDate() != null) {
+                long totalDays = ChronoUnit.DAYS.between(rp.getStartDate(), rp.getEndDate());
+                if (totalDays > 0) {
+                    long elapsedDays = ChronoUnit.DAYS.between(rp.getStartDate(), now);
+                    long effectiveElapsed = Math.max(0, Math.min(totalDays, elapsedDays));
+                    BigDecimal timeProgress = new BigDecimal(effectiveElapsed)
+                            .divide(new BigDecimal(totalDays), 4, RoundingMode.HALF_UP)
+                            .multiply(new BigDecimal("100"));
+                            
+                    if (timeProgress.subtract(execRate).compareTo(new BigDecimal("30")) > 0 && timeProgress.compareTo(new BigDecimal("10")) > 0) {
+                        lagging++;
+                    }
+                }
+            }
+        }
+
+        return GlobalRiskSummaryVO.builder()
+                .overdueProjects(overdue)
+                .laggingProjects(lagging)
+                .alertProjects(alert)
+                .build();
     }
 
     @Override public List<ExecutionRateVO> getProjectExecutionRates() { return getProjectExecutionRates(null); }

@@ -33,13 +33,20 @@
     <el-card shadow="never">
       <el-form :inline="true">
         <el-form-item label="筛选项目">
-          <el-select v-model="selectedProjectId" style="width: 320px" @change="loadBudgets" filterable>
-            <el-option
-              v-for="project in projects"
-              :key="project.id"
-              :label="`[${project.projectCode}] ${project.projectName}`"
-              :value="project.id"
-            />
+          <el-select v-model="selectedProjectId" style="width: 400px" @change="loadBudgets" filterable placeholder="请选择或搜索项目">
+            <el-option-group v-for="group in groupedProjects" :key="group.label" :label="group.label">
+              <el-option
+                v-for="project in group.options"
+                :key="project.id"
+                :label="`[${project.projectCode}] ${project.projectName}`"
+                :value="project.id"
+              >
+                <div class="option-content">
+                  <span class="proj-name">{{ project.projectName }}</span>
+                  <span class="proj-code">{{ project.projectCode }}</span>
+                </div>
+              </el-option>
+            </el-option-group>
           </el-select>
         </el-form-item>
       </el-form>
@@ -161,6 +168,26 @@ const isBalanced = computed(() => {
   return Math.abs(remainingAmount.value) < 0.01
 })
 
+const groupedProjects = computed(() => {
+  // 1. 强制过滤：只保留“执行中”的项目
+  const executingOnes = projects.value.filter(p => p.status === '执行中')
+  
+  // 2. 按负责人分组
+  const groups = {}
+  executingOnes.forEach(p => {
+    const name = p.principalName || '未知负责人'
+    if (!groups[name]) {
+      groups[name] = {
+        label: `${name} 负责的项目`,
+        options: []
+      }
+    }
+    groups[name].options.push(p)
+  })
+
+  return Object.values(groups).sort((a, b) => a.label.localeCompare(b.label, 'zh-CN'))
+})
+
 function progressColor(rate) {
   if (rate < 80) return '#67C23A'
   if (rate <= 95) return '#E6A23C'
@@ -181,8 +208,8 @@ async function loadData() {
   categories.value = categoryRes.data || []
   threshold.value = Number(settingsRes.data?.value || 95)
   
-  if (projects.value.length) {
-    selectedProjectId.value = projects.value[0].id
+  if (groupedProjects.value.length > 0) {
+    selectedProjectId.value = groupedProjects.value[0].options[0].id
     await loadBudgets()
   }
 }
@@ -260,5 +287,8 @@ onMounted(loadData)
 .amount-text { font-size: 18px; font-weight: 700; font-family: 'Courier New', Courier, monospace; }
 .text-success { color: #10b981; }
 .text-danger { color: #ef4444; }
+.option-content { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px; }
+.proj-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
+.proj-code { color: #94a3b8; font-size: 12px; font-family: monospace; }
 .form-help { font-size: 12px; color: #64748b; margin-top: 8px; font-style: italic; }
 </style>

@@ -63,6 +63,20 @@
           </div>
         </transition>
 
+        <!-- ★ 新增：逾期提示区 -->
+        <transition name="el-fade-in">
+          <div v-if="isOverdue" class="overdue-warning">
+            <el-alert
+              title="项目执行期已届满"
+              type="warning"
+              description="该项目已超过合同结束日期，请确保录入的支出事项均发生在执行期内，以免审计退回。"
+              show-icon
+              :closable="false"
+              style="margin-bottom: 24px"
+            />
+          </div>
+        </transition>
+
         <el-row :gutter="24">
           <el-col :span="12">
             <el-form-item label="报销金额 (元)" prop="amount">
@@ -110,7 +124,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { projectApi } from '@/api/projectApi'
@@ -143,6 +157,18 @@ const rules = {
   amount: [{ required: true, message: '请输入报销金额', trigger: 'blur' }],
   expenditureDate: [{ required: true, message: '请选择支出日期', trigger: 'change' }]
 }
+
+// ★ 新增：判定选中项目是否逾期
+const selectedProject = computed(() => {
+  return projects.value.find(p => p.id === form.projectId)
+})
+
+const isOverdue = computed(() => {
+  if (!selectedProject.value || !selectedProject.value.endDate) return false
+  const end = new Date(selectedProject.value.endDate).getTime()
+  const now = new Date().getTime()
+  return now >= end
+})
 
 async function loadInitialData() {
   try {
@@ -189,7 +215,7 @@ async function submitForm() {
       try {
         await expenditureApi.create(form)
         ElMessage.success('报销申请已提交，等待审核')
-        router.push('/expenditures')
+        router.push({ path: '/expenditures', query: { projectId: form.projectId } })
       } catch (error) {
         // 后端拦截逻辑会返回 400/500 错误及详细提示
         const errorMsg = error.response?.data?.message || error.message || '提交失败'

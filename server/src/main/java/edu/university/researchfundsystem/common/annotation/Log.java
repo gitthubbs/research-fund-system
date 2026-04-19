@@ -1,4 +1,4 @@
-package edu.university.researchfundsystem.common.annotation; // ★ 新增
+package edu.university.researchfundsystem.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -21,5 +21,11 @@ export const expenditureApi = {
   getPending: () => request.get('/expenditures/pending'),
 
   // ★ 新增：审核操作
-  audit: (data) => request.put('/expenditures/audit', data)
+  audit: (data) => request.put('/expenditures/audit', data),
+
+  // ★ 新增：获取用户预警支出
+  getAlerts: () => request.get('/expenditures/alerts'),
+
+  // ★ 新增：设为已读
+  read: (id) => request.put(`/expenditures/${id}/read`)
 }

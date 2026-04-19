@@ -1,4 +1,4 @@
-package edu.university.researchfundsystem.common.aspect; // ★ 新增
+package edu.university.researchfundsystem.common.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.university.researchfundsystem.common.SecurityUtils;
@@ -34,8 +34,6 @@ public class LogAspect {
 
     @Around("@annotation(logAnnotation)")
     public Object around(ProceedingJoinPoint joinPoint, Log logAnnotation) throws Throwable {
-        long beginTime = System.currentTimeMillis();
-        
         Object result = null;
         Throwable exception = null;
         try {
@@ -56,14 +54,15 @@ public class LogAspect {
 
     private void saveLog(ProceedingJoinPoint joinPoint, Log logAnnotation, Object result, Throwable exception) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attributes == null) return;
-        
+        if (attributes == null)
+            return;
+
         HttpServletRequest request = attributes.getRequest();
-        
+
         SysLog sysLog = new SysLog();
         sysLog.setAction(logAnnotation.value());
         sysLog.setCreateTime(LocalDateTime.now());
-        
+
         // 设置用户信息
         Long userId = SecurityUtils.getCurrentUserId(request);
         if (userId != null) {
@@ -82,7 +81,7 @@ public class LogAspect {
         // 设置请求环境信息
         sysLog.setIpAddress(getIpAddr(request));
         sysLog.setUserAgent(request.getHeader("User-Agent"));
-        
+
         // 设置请求数据 (取第一个参数，通常是 @RequestBody 对象)
         try {
             Object[] args = joinPoint.getArgs();

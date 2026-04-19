@@ -27,5 +27,8 @@ export const projectApi = {
   audit: (data) => request.put('/projects/audit', data),
 
   // 确认预算
-  confirmBudget: (id) => request.put(`/projects/confirm-budget/${id}`)
+  confirmBudget: (id) => request.put(`/projects/confirm-budget/${id}`),
+
+  // 结题验收
+  finish: (id) => request.put(`/projects/finish/${id}`)
 };

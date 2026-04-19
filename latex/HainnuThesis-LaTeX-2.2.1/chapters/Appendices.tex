@@ -1,0 +1,75 @@
+\appendices
+
+\section{核心数据库建表脚本}
+本系统底层采用 MyBatis-Plus 配合 MySQL 实现数据持久化，以下列出两个核心业务实体的建表脚本，展示了系统对金额精度和一对多关系的维护逻辑。
+
+\begin{lstlisting}[language=SQL, caption={科研项目与支出明细核心表设计}]
+-- 科研项目信息表：维护总额、可用余额与时间节点
+CREATE TABLE `research_project` (
+  `id` BIGINT NOT NULL COMMENT '项目ID',
+  `project_name` VARCHAR(255) NOT NULL COMMENT '项目名称',
+  `total_budget` DECIMAL(15,2) DEFAULT 0.00 COMMENT '核定总预算',
+  `used_amount` DECIMAL(15,2) DEFAULT 0.00 COMMENT '已支出金额',
+  `start_date` DATE NOT NULL COMMENT '启动日期',
+  `end_date` DATE NOT NULL COMMENT '计划结题日期',
+  `status` INT DEFAULT 0 COMMENT '状态: 0-待申报, 1-执行中, 2-已结题',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 经费支出记录表：维护关联项目、科目及附件信息
+CREATE TABLE `fund_expenditure` (
+  `id` BIGINT NOT NULL COMMENT '支出流水ID',
+  `project_id` BIGINT NOT NULL COMMENT '所属项目',
+  `category_id` BIGINT NOT NULL COMMENT '所属预算科目',
+  `amount` DECIMAL(15,2) NOT NULL COMMENT '报销金额',
+  `exp_date` DATETIME NOT NULL COMMENT '支出发生时间',
+  `audit_status` INT DEFAULT 0 COMMENT '审计状态',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+\end{lstlisting}
+
+\section{经费报销预算强校验逻辑}
+在 \texttt{FundExpenditureServiceImpl} 中，系统实现了对“余额不足”的严密拦截。以下为核心业务代码段。
+
+\begin{lstlisting}[language=Java, caption={财务安全硬拦截逻辑实现}]
+@Override
+public void submitExpenditure(FundExpenditure exp) {
+    // 1. 获取关联项目的科目剩余额度快照
+    BigDecimal available = budgetService.getAvailableBalance(exp.getProjectId(), exp.getCategoryId());
+    
+    // 2. 强校验：拦截超支行为并抛出RuntimeException触发事务回滚
+    if (exp.getAmount().compareTo(available) > 0) {
+        throw new RuntimeException("操作失败：金额 " + exp.getAmount() + " 已超出该科目当前余额 " + available);
+    }
+    
+    // 3. 执行持久化并更新项目的 used_amount 总额
+    this.save(exp);
+    projectService.updateUsedBalance(exp.getProjectId(), exp.getAmount());
+}
+\end{lstlisting}
+
+\section{系统图标与资源声明}
+
+图~\ref{hnulogo} 为海南师范大学官方徽标，作为系统登录页及全局页眉的视觉标识使用。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[height=3.5cm]{logoimage/logo.png}
+	\caption{海南师范大学校标（应用场景：系统导航栏与登录组件）}\label{hnulogo}
+\end{figure}
+
+\section{RESTful API 核心接口清单}
+系统前后端交互遵循 REST 规范，以下为决策看板模块所依赖的核心数据拉取接口定义。
+
+\begin{table}[htp]
+	\caption{系统主要数据查询接口清单}\label{tab:apis}
+	\centering
+	\begin{tabular}{|l|l|l|}
+		\hline
+		接口路径          & 请求方式   & 功能说明         \\ \hline
+		/api/projects/list   & GET       & 分页获取当前用户管控的项目列表      \\ \hline
+		/api/statistics/summary & GET    & 获取全校/个人经费执行多维统计看板   \\ \hline
+		/api/budget/check      & POST      & 预检报销申请是否符合预算余额要求   \\ \hline
+		/api/risk/tags         & GET       & 根据偏差模型动态生成项目智能风险标签 \\ \hline
+	\end{tabular}
+\end{table}

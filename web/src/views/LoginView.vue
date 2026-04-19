@@ -3,7 +3,7 @@
     <div class="panel intro">
       <p class="eyebrow">Research Fund System</p>
       <h1>科研经费管理系统</h1>
-      <p class="copy">支持管理员与科研人员双角色登录、预算预警和项目绩效跟踪。</p>
+      <p class="copy">支持管理员与科研人员双角色登录、自动预算预警和经费执行监控。</p>
       <div class="accounts">
         <div class="account">
           <strong>管理员</strong>

@@ -1,0 +1,159 @@
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%%        专业型学位, 人文社科大类章节编号用中文，
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%\documentclass[profesdegree,chinesetitlenum]{hainnuthesis}
+
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%%        专业型学位, 理工科大类章节编号用数字，
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\documentclass[profesdegree,arabictitlenum]{hainnuthesis}
+
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%%        学术型学位, 人文社科大类章节编号用中文，
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%\documentclass[academdegree,chinesetitlenum]{hainnuthesis}
+
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%%        学术型学位, 理工科大类章节编号用数字，
+%%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%\documentclass[academdegree,arabictitlenum]{hainnuthesis}
+
+%% 随机文本(测试使用)
+\usepackage{lipsum,zhlipsum}
+
+%% 超链接设定
+\usepackage[colorlinks,
+			linkcolor=black,
+			anchorcolor=blue,
+			citecolor=blue]{hyperref}
+
+
+%%你可以在下面的文件中添加自己常用的宏定义，简化命令的使用
+\input{Settings/UserTextDef}
+%
+%数学公式写作定义
+\input{Settings/UserMathDef}
+
+%导入代码设置
+\input{Settings/UserAlgrCode}
+
+%导入图片文件夹
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 海南师范大学的logo图片在logoimage中，不要把其他图片放入logoimage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 请将你自己的图片放在文件夹figures与images中
+\graphicspath{{logoimage/}{figures/}{images/}}
+
+\setcounter{tocdepth}{2}	%设置目录层级，研究生默认为1，本科生默认为2
+
+%% ==== 学位论文信息输入
+\hainnuset{%
+    % -- 中文信息                        
+    title         = {虚假机载导航信号识别的深度学习\\方法研究},  % 论文题目
+    schoolcode    = {11658},             % 学校代码
+    studentid     = {202313085404018},   % 研究生学号
+    classifier    = {G423},              % 中图法分类号
+    secretlevel   = {公开},               % 密级
+    author        = {郝厉害},              % 作者姓名
+    degreelevel   = {博士},
+    degreetype    = {工学博士},          % 学位类别
+    supervisor    = {高水平},            % 指导教师姓名
+    acadetitle    = {教授},              % 导师学术头衔
+    submitdate    = {2026年6月28日},     % 论文提交日期
+    institution   = {人工智能学院},       % 培养单位
+    % -- 英文信息                        % 论文题目(英文)
+    etitle        = {Contributions to Deep Learning Method for 
+                     Identifying False Airborne Navigation Signals},
+    eauthor       = {Lihai HAO},         % 作者姓名(英文)
+    edegreelevel  = {Ph.D},            % 学位名称(英文)
+    ethesistype   = {Dissertation},            % 论文属性类别: Thesis/Dissertation
+    esupervisor   = {Shuiping GAO},         % 导师姓名(英文)
+    eacadetitle   = {Prof.},         % 导师学术头衔(英文)
+    einstitution  = {School of Artificial Intelligence},    
+    %% ==== 学术型硕士修改以下内容
+    researchdir   = {航空信息网络安全},  % 研究方向
+    primarydisc   = {网络空间安全},    % 一级学科
+    secndrydisc   = {数据安全},        % 二级学科
+    %% ==== 专业型硕士修改以下内容
+    profesfield	  = {电子信息},		  % 专业学位领域
+    supervisorB   = {甄棒},             % 行业导师姓名
+    acadetitleB   = {研究员},           % 行业导师职称/学术头衔
+    esupervisorB  = {Bang ZHEN},         % 行业导师姓名(英文)
+    eacadetitleB  = {Prof.},           % 行业导师职称/学术头衔(英文)
+}
+
+\begin{document}
+
+%%==================================%%
+%%             封    面             %%
+%%==================================%%
+% 自动生成封面，无需改动
+\maketitle
+\frontmatter
+
+
+%%==================================%%
+%%             摘    要             %%
+%%==================================%%
+\include{chapters/Abstract-MS}
+
+%%==================================%%
+%%             目    录             %%
+%%==================================%%
+% 自动生成目录，无需改动
+\tableofcontents
+\mainmatter
+
+
+%%==================================%%
+%%            序     文            %%
+%%==================================%%
+\include{chapters/Preface}
+
+
+%%==================================%%
+%%            正     文            %%
+%%==================================%%
+% 标题前的章节序号可以自由输入希望的格式，也可以省略
+\include{chapters/Introduction}
+\include{chapters/UserManual}
+
+
+%%==================================%%
+%%            结     论            %%
+%%==================================%%
+\include{chapters/Conclusion}
+
+%%==================================%%
+%%             附    录             %%
+%%==================================%%
+\include{chapters/Appendices}
+
+%%****************************************
+%%  参考文献
+%%****************************************
+% 按照国家标准生成参考文献，采用数字编号进行排序
+\bibliographystyle{gbt7714-numerical}
+\reference\nointerlineskip
+\bibliography{BibTeX/BibTest}
+
+%%==================================%%
+%%             学术成果             %%
+%%==================================%%
+\include{chapters/Achievements}
+
+%%==================================%%
+%%             致    谢             %%
+%%==================================%%
+\include{chapters/Acknowledgement}
+
+%%==================================%%
+%%             答辩决议             %%
+%%==================================%%
+%\include{chapters/Resolution}
+
+
+\end{document}

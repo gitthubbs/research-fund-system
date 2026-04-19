@@ -23,16 +23,28 @@
             <el-progress :percentage="Number(row.executionRate || 0)" :stroke-width="14" />
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <StatusTag :status="row.status" />
           </template>
         </el-table-column>
-        <el-table-column label="绩效等级" width="120">
+        <!-- ★ 新增：智能标签列 -->
+        <el-table-column label="智能标签" width="160">
           <template #default="{ row }">
-            <PerformanceTag :performance="row.performance" />
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <el-tag 
+                v-for="tag in row.intelligentTags" 
+                :key="tag"
+                :type="getTagType(tag)"
+                size="small"
+                effect="light"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/projects/${row.id}`)">详情</el-button>
@@ -71,7 +83,6 @@ import { ElMessage } from 'element-plus'
 import { projectApi } from '@/api/projectApi'
 import { userApi } from '@/api/userApi'
 import StatusTag from '@/components/project/StatusTag.vue'
-import PerformanceTag from '@/components/project/PerformanceTag.vue'
 import ProjectForm from '@/components/project/ProjectForm.vue'
 
 const projects = ref([])
@@ -92,8 +103,7 @@ const editing = reactive({
   principalId: null,
   startDate: '',
   endDate: '',
-  totalBudget: 0,
-  performance: '中'
+  totalBudget: 0
 })
 
 const filteredProjects = computed(() =>
@@ -118,8 +128,7 @@ function resetEditing() {
     principalId: researchers.value[0]?.id || null,
     startDate: '',
     endDate: '',
-    totalBudget: 0,
-    performance: '中'
+    totalBudget: 0
   })
 }
 
@@ -144,8 +153,7 @@ async function submit() {
     principalId: editing.principalId,
     startDate: editing.startDate,
     endDate: editing.endDate,
-    totalBudget: editing.totalBudget,
-    performance: editing.performance
+    totalBudget: editing.totalBudget
   }
 
   submitting.value = true
@@ -170,6 +178,24 @@ async function remove(id) {
   await projectApi.delete(id)
   ElMessage.success('项目已删除')
   await loadData()
+}
+
+// 智能标签颜色映射
+function getTagType(tag) {
+  switch (tag) {
+    case '逾期':
+    case '余额告急':
+      return 'danger'
+    case '临期':
+    case '执行滞后':
+      return 'warning'
+    case '待启动':
+    case '待审核':
+    case '待提交':
+      return 'info'
+    default:
+      return 'primary'
+  }
 }
 
 onMounted(loadData)

@@ -4,10 +4,12 @@ import edu.university.researchfundsystem.common.annotation.Log; // ★ 新增
 import edu.university.researchfundsystem.common.Result;
 import edu.university.researchfundsystem.entity.FundExpenditure;
 import edu.university.researchfundsystem.model.vo.ExpenditureListItemVO;
+import edu.university.researchfundsystem.common.SecurityUtils;
 import edu.university.researchfundsystem.service.FundExpenditureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -16,6 +18,7 @@ import java.util.List;
 public class FundExpenditureController {
 
     private final FundExpenditureService expenditureService;
+    private final HttpServletRequest request;
 
     @GetMapping("/list/project/{projectId}")
     public Result<List<ExpenditureListItemVO>> getByProject(@PathVariable Long projectId) {
@@ -71,5 +74,17 @@ public class FundExpenditureController {
     @DeleteMapping("/delete/{id}")
     public Result<Boolean> delete(@PathVariable Long id) {
         return Result.success(expenditureService.removeById(id));
+    }
+
+    @GetMapping("/alerts")
+    public Result<List<ExpenditureListItemVO>> getAlerts() {
+        Long userId = SecurityUtils.getCurrentUserId(request);
+        return Result.success(expenditureService.findUserAlerts(userId));
+    }
+
+    @PutMapping("/{id}/read")
+    public Result<String> read(@PathVariable Long id) {
+        expenditureService.markAsRead(id);
+        return Result.success("已标记为已读");
     }
 }

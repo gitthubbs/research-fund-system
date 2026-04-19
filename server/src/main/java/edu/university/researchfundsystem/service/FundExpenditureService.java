@@ -20,4 +20,10 @@ public interface FundExpenditureService extends IService<FundExpenditure> {
 
     // ★ 新增：支出监控全量搜索
     List<ExpenditureListItemVO> searchExpenditures(Long projectId, Long categoryId, String startDate, String endDate);
+
+    // ★ 新增：获取用户预警支出（待审核或未读驳回）
+    List<ExpenditureListItemVO> findUserAlerts(Long userId);
+
+    // ★ 新增：设为已读
+    void markAsRead(Long id);
 }

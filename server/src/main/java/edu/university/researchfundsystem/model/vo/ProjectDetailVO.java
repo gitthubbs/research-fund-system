@@ -13,7 +13,7 @@ public class ProjectDetailVO {
     private String projectName;
     private String projectCode;
     private String principalName;
-    private String performance;
+
     private Integer status;
     private String statusText;
     private String auditRemark;

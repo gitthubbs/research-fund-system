@@ -24,7 +24,7 @@ const initialData = {
       totalBudget: 820000,
       spentAmount: 612000,
       status: '执行中',
-      performance: '优',
+
       milestones: [
         { id: 1, stage: '立项', date: '2026-01-10', content: '项目完成立项审批并下达首批预算。' },
         { id: 2, stage: '中期检查', date: '2026-08-15', content: '通过中期检查，追加设备采购额度。' },
@@ -41,7 +41,7 @@ const initialData = {
       totalBudget: 560000,
       spentAmount: 541000,
       status: '临近结题',
-      performance: '良',
+
       milestones: [
         { id: 1, stage: '立项', date: '2025-09-01', content: '完成实验平台升级立项。' },
         { id: 2, stage: '中期检查', date: '2026-03-20', content: '设备安装完成，进入试运行。' },
@@ -58,7 +58,7 @@ const initialData = {
       totalBudget: 300000,
       spentAmount: 96000,
       status: '执行中',
-      performance: '良',
+
       milestones: [
         { id: 1, stage: '立项', date: '2026-02-18', content: '青年基金正式立项。' },
         { id: 2, stage: '中期检查', date: '2027-02-28', content: '计划开展中期检查。' },

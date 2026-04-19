@@ -85,4 +85,13 @@ public class ResearchProjectController {
         }
         return Result.error("确认失败，请检查项目状态");
     }
+
+    @Log("结题验收")
+    @PutMapping("/finish/{id}")
+    public Result<String> finishProject(@PathVariable Long id) {
+        if (projectService.finishProject(id)) {
+            return Result.success("项目结题成功");
+        }
+        return Result.error("结题失败，请检查项目状态");
+    }
 }

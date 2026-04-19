@@ -168,20 +168,6 @@ const getSmartLabels = (row) => {
   const labels = []
   if (!row.startDate || !row.endDate || row.status !== '执行中') return labels
 
-  const now = new Date()
-  const start = new Date(row.startDate)
-  const end = new Date(row.endDate)
-  
-  // 时间进度 (0~1)
-  let timeProgress = 0
-  if (now > end) {
-    timeProgress = 1
-  } else if (now >= start) {
-    const totalDuration = end.getTime() - start.getTime()
-    const elapsed = now.getTime() - start.getTime()
-    timeProgress = elapsed / totalDuration
-  }
-
   // 1. 余额告急: (总预算 - 已支出) / 总预算 < 10%
   const total = Number(row.totalBudget || 0)
   const spent = Number(row.spentAmount || 0)
@@ -193,15 +179,30 @@ const getSmartLabels = (row) => {
     })
   }
 
-  // 2. 进度滞后: 执行率 < 时间进度 * 40% (其中时间进度转为百分比)
-  // 增加时间进度门槛 (0.1)，防止新立项项目误报
-  const execRate = Number(row.executionRate || 0)
-  if (timeProgress > 0.1 && execRate < timeProgress * 40) {
-    labels.push({
-      type: 'warning',
-      text: '进度滞后',
-      action: () => router.push({ path: `/projects/${row.id}` })
-    })
+  // 2. 偏移分析 (同步详情页逻辑)
+  const now = new Date().getTime()
+  const start = new Date(row.startDate).getTime()
+  const end = new Date(row.endDate).getTime()
+  
+  // 计算进度百分比 (0-100)
+  let timeRate = 0
+  if (now >= end) {
+    timeRate = 100
+  } else if (now > start) {
+    timeRate = Math.round(((now - start) / (end - start)) * 100)
+  }
+
+  const fundRate = Number(row.executionRate || 0)
+  const diff = timeRate - fundRate
+
+  if (diff > 50) {
+    labels.push({ type: 'danger', text: '严重滞后', action: () => router.push(`/projects/${row.id}`) })
+  } else if (diff > 30) {
+    labels.push({ type: 'warning', text: '进度滞后', action: () => router.push(`/projects/${row.id}`) })
+  } else if (diff < -50) {
+    labels.push({ type: 'danger', text: '支出异常', action: () => router.push(`/projects/${row.id}`) })
+  } else if (diff < -30) {
+    labels.push({ type: 'warning', text: '支出偏快', action: () => router.push(`/projects/${row.id}`) })
   }
 
   return labels
