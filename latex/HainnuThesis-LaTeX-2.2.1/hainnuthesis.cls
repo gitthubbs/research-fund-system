@@ -162,6 +162,7 @@
 
 %设置页边距
 \newcommand\checkbox{\raisebox{.5ex}{\fbox{\phantom{\rule{.5ex}{.5ex}}}}}
+\RequirePackage{indentfirst} % 解决首段不缩进问题
 \if@hainnuthesis@master
 \RequirePackage[%
 %showframe,
@@ -195,9 +196,24 @@ footnotesep=28mm,
 \RequirePackage{longtable}    % 用于表格跨页，支持添加表头
 \RequirePackage{supertabular} % 用于表格跨页，不支持添加表头
 \RequirePackage{lscape} % 用于横向放置表格
+\RequirePackage{arydshln} % 必须在 longtable/tabularx 之后加载
+\setlength{\dashlinedash}{1.5pt}
+\setlength{\dashlinegap}{1.5pt}
+\setlength{\arrayrulewidth}{0.5pt}
 
 \captionsetup[figure]{labelsep=quad} % 去掉冒号
-\captionsetup[table]{labelsep=quad}  % 去掉冒号
+\DeclareCaptionFont{xiaosi}{\zihao{-4}}
+\captionsetup[table]{
+    labelsep=quad,
+    font={bf,xiaosi},
+    labelfont={bf,xiaosi},
+    textfont={bf,xiaosi},
+    justification=centering,
+    position=top,
+    aboveskip=0.5\baselineskip,
+    belowskip=0.5\baselineskip
+}
+
 
 \def\tabularxcolumn#1{m{#1}}
 % 行间距
@@ -224,31 +240,38 @@ footnotesep=28mm,
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
 
 %字体设置
 \RequirePackage{newtxmath}
 \RequirePackage{xeCJKfntef}
 \RequirePackage{fontspec}
 \setmainfont{Times New Roman}
-\newCJKfontfamily{\songti}{simsun.ttc}[%
+
+% 设置 CJK 默认字体族，解决 \CJKttdefault 等未定义的问题
+\setCJKmainfont{simsun.ttc}[AutoFakeBold=2.5]
+\setCJKsansfont{simhei.ttf}[AutoFakeBold=1.5]
+\setCJKmonofont{simfang.ttf}[AutoFakeBold=1.5]
+
+\newCJKfontfamily{\songti}{simsun.ttc}[
 %Path={./fonts/},
 UprightFont = *,
 AutoFakeBold=2.5
 ]
 
-\newCJKfontfamily{\heiti}{simhei.ttf}[%
+\newCJKfontfamily{\heiti}{simhei.ttf}[
 %Path={./fonts/},
 UprightFont = *,
 AutoFakeBold=1.5
 ]
 
-\newCJKfontfamily{\fangsong}{simfang.ttf}[%
+\newCJKfontfamily{\fangsong}{simfang.ttf}[
 %Path={./fonts/},
 UprightFont = *,
 AutoFakeBold=1.5
 ]
 
-\newCJKfontfamily{\kaishu}{simkai.ttf}[%
+\newCJKfontfamily{\kaishu}{simkai.ttf}[
 %Path={./fonts/},
 UprightFont = *,
 AutoFakeBold=1.5
@@ -290,7 +313,7 @@ citecolor=blue]{hyperref}
     \fi
     \pagestyle{plain}}
 \renewcommand\mainmatter{%
-    \if@openright\cleardoublepage\else\clearpage\fi
+    \clearpage
     \@mainmattertrue
     \pagenumbering{arabic}
     \pagestyle{hainnu@headings}}
@@ -577,7 +600,7 @@ citecolor=blue]{hyperref}
 	\if@hainnuthesis@master
 	    \cleardoublepage
 	    \phantomsection
-	    \addcontentsline{toc}{chapter}{\IfNoValueTF{#1}{中文摘要}{英文摘要}}
+	    %\addcontentsline{toc}{chapter}{\IfNoValueTF{#1}{中文摘要}{英文摘要}}
 	    \mbox{}
 	    \par\vspace{\baselineskip}
 	    \noindent
@@ -710,7 +733,7 @@ citecolor=blue]{hyperref}
 	\renewcommand\contentsname{目\hspace{2\ccwd}录}
 	\renewcommand{\tableofcontents}{%
 		\cleardoublepage\thispagestyle{plain}
-		\phantomsection\addcontentsline{toc}{chapter}{\contentsname}
+		\phantomsection%\addcontentsline{toc}{chapter}{\contentsname}
 		\mbox{}\\[\baselineskip]%
 		\noindent\makebox[\textwidth][c]{\zihao{-2}\heiti\contentsname}
 		\par\vspace{\baselineskip}
@@ -720,7 +743,7 @@ citecolor=blue]{hyperref}
 	\renewcommand\contentsname{\kaishu \bfseries\zihao{2}目\hspace{2\ccwd}录}
 	\renewcommand{\tableofcontents}{%
 		\cleardoublepage\thispagestyle{plain}
-		\phantomsection\addcontentsline{toc}{chapter}{\textbf{目\hspace{2\ccwd}录}}
+		\phantomsection%\addcontentsline{toc}{chapter}{\textbf{目\hspace{2\ccwd}录}}
 		\mbox{}\\[\baselineskip]%
 		\noindent\makebox[\textwidth][c]{\zihao{5}\heiti\contentsname}
 		\par\vspace{\baselineskip}

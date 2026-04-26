@@ -10,11 +10,11 @@
 \section{核心业务与分析逻辑的落地}
 
 \subsection{项目生命周期的状态驱动实现}
-为了让项目的进度变得直观，本系统设计了一套由 6 级内部状态驱动的生命周期管理机制。在数据库中，项目状态从草案（0）到已结项（4）不等。前端在接收到后端返回的状态枚举后，会利用 Vue 的计算属性动态匹配对应的彩色标签。比如“执行中”显示为绿色，“待审批”显示为黄色，这样科研人员一眼就能看清自己负责的所有项目正处于什么阶段。
+为了让项目的进度变得直观，本系统设计了一套由 6 级内部状态驱动的生命周期管理机制。在数据库中，项目状态从草案（0）到已结项（4）不等。前端在接收到后端返回的状态枚举后，会利用 Vue 的计算属性动态匹配对应的彩色标签，具体展示效果如图\ref{fig:project_tags}所示。比如“执行中”显示为绿色，“待审批”显示为黄色，这样科研人员一眼就能看清自己负责的所有项目正处于什么阶段。
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.7\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/project_tags.png}
+    \includegraphics[width=0.7\textwidth,totalheight=0.35\textheight,keepaspectratio]{figures/project_tags.png}
     \caption{基于状态机的项目生命周期可视化标签}
     \label{fig:project_tags}
 \end{figure}
@@ -29,6 +29,7 @@
     \item \textbf{常规预警标签（橙色）}：包括“进度滞后”（$\Delta > 30\%$）与“支出偏快”（$\Delta < -30\%$）。
 \item \textbf{资源风险标签（软预警）}：如“余额告急”（剩余预算不足 10\%），该标签仅作为**事前提示**，指引科研人员在报销前进行自我核查，避免无效申报。
 \end{enumerate}
+科研人员视角下的多维预警标签在系统列表页面的具体表现如图\ref{fig:intelligent_tags_researcher}所示。
 
 \subsection{经费报销的分布式余额硬拦截机制}
 真正的财务安全由后端 \texttt{FundExpenditureServiceImpl} 的“硬拦截”机制保障。在报销申请提交时刻，系统会通过严格的额度校验算法，对不合规行为进行物理阻断。
@@ -52,6 +53,7 @@ if (expenditure.getAmount().compareTo(budgetLimit.subtract(usedAmount)) > 0) {
     \item \textbf{资产风险标签}：如“逾期”，标识必须进行财务清算的异常项目，支撑管理员进行强制结账操作。
     \item \textbf{合规监控标签}：如“执行滞后”与“余额告急”，用于宏观调控全校经费执行进度，防范学术呆账。
 \end{enumerate}
+管理人员端侧重于任务驱动与资产审计的智能标签配置如图\ref{fig:intelligent_tags_admin}所示。
 
 \begin{lstlisting}[language=Java, caption={后端 Service 层全量标签生成逻辑}]
 // 根据 status 枚举值生成流程驱动标签
@@ -64,16 +66,15 @@ if (now.isAfter(project.getEndDate())) {
 }
 \end{lstlisting}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/intelligent_tags_researcher.png}
+    \includegraphics[width=0.75\textwidth,totalheight=0.25\textheight,keepaspectratio]{figures/intelligent_tags_researcher.png}
     \caption{科研人员视角下的智能风险标签展示}
     \label{fig:intelligent_tags_researcher}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.7\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/intelligent_tags_admin.png}
+    
+    \vspace{0.8em}
+    
+    \includegraphics[width=0.75\textwidth,totalheight=0.25\textheight,keepaspectratio]{figures/intelligent_tags_admin.png}
     \caption{管理人员视角下的智能标签表现（侧重审批任务与全局监控）}
     \label{fig:intelligent_tags_admin}
 \end{figure}
@@ -93,19 +94,19 @@ private BigDecimal calculateRate(BigDecimal spent, BigDecimal budget) {
 \end{lstlisting}
 
 \subsection{经费支出的“余额硬拦截”与预警}
-在支出记录模块，系统通过 AOP 拦截与实时余额检索，实现了经费报销的动态平衡控制。当报销金额超过分项余额、或项目已逾期时，前端会实时反馈高亮警告。
+在支出记录模块，系统通过 AOP 拦截与实时余额检索，实现了经费报销的动态平衡控制。当报销金额超过分项余额、或项目已逾期时，前端会实时反馈高亮警告，具体拦截效果如图\ref{fig:expenditure_alert}所示。
 
 %此处需要一张“报销录入页-余额预警”的截图
 %建议操作：在报销录入界面，选择一个余额不足的项目录入大额支出，截取页面顶部的红色/黄色警告框，命名为 expenditure_alert.png
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/expenditure_alert.png}
+    \includegraphics[width=1.0\textwidth,totalheight=0.35\textheight,keepaspectratio]{figures/expenditure_alert.png}
     \caption{基于预算阈值的报销录入硬拦截机制}
     \label{fig:expenditure_alert}
 \end{figure}
 
 \subsection{智能助手风险扫描机制}
-“智能助手”模块是本系统的技术亮点之一，它通过主动巡检模式识别潜在的财务风险。其实现逻辑如下代码所示：
+“智能助手”模块是本系统的技术亮点之一，它通过主动巡检模式识别潜在的财务风险，其风险建议面板与详情的展示如图\ref{fig:assistant}与图\ref{fig:assistant_detail}所示。其实现逻辑如下代码所示：
 
 \begin{lstlisting}[language=Java, caption={智能助手预警巡检逻辑}]
 // 扫描执行进度滞后 (时间进度 - 经费执行率 > 10\%)
@@ -125,23 +126,26 @@ for (ExecutionRateVO rateVO : rates) {
 }
 \end{lstlisting}
 
-%此处需要一张“智能助手侧边栏”的运行截图
-%建议操作：登录科研人员账号，点击右下角紫色AI小球展开抽屉，截图命名为 assistant.png
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/assistant.png}
-    \caption{智能助手风险建议面板}
+    \includegraphics[width=0.75\textwidth,totalheight=0.45\textheight,keepaspectratio]{figures/assistant.png}
+    \caption{智能助手风险概览面板}
     \label{fig:assistant}
 \end{figure}
 
-\subsection{全校执行风险监控看板}
-针对管理层，系统实现了“全校风险监控”功能。该看板集成了多维维度的全量数据扫描能力，管理员可通过“视角切换器（Researcher Selector）”下钻查看特定科研人员的项目细节，实现了从“宏观总览”到“微观审计”的无缝衔接。
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth,totalheight=0.45\textheight,keepaspectratio]{figures/assistant_detail.png}
+    \caption{智能助手风险分析详情}
+    \label{fig:assistant_detail}
+\end{figure}
 
-%此处需要一张合并截图：包含顶部的风险卡片，且同时展开右上角的“监控视角”下拉列表
-%截图命名为 admin_monitor_combined.png
+\subsection{全校执行风险监控看板}
+针对管理层，系统实现了“全校风险监控”功能。该看板集成了多维维度的全量数据扫描能力，如图\ref{fig:admin_monitor_combined}所示，管理员可通过“视角切换器（Researcher Selector）”下钻查看特定科研人员的项目细节，实现了从“宏观总览”到“微观审计”的无缝衔接。
+
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth,totalheight=0.35\textheight,keepaspectratio]{figures/admin_monitor_combined.png}
+    \includegraphics[width=1.0\textwidth,totalheight=0.8\textheight,keepaspectratio]{figures/admin_monitor_combined.png}
     \caption{管理端监控视角切换与全校风险仪表盘集成界面}
     \label{fig:admin_monitor_combined}
 \end{figure}
@@ -165,13 +169,11 @@ if (project.getStartDate() != null && project.getEndDate() != null) {
 }
 \end{lstlisting}
 
-该算法保证了进度的客观性。当前端检测到执行率 $\text{FundRate}$ 显著低于 $\text{TimeProgress}$ 时，系统会自动触发“执行滞后”预警，为管理人员提供深度的干预参考。
+该算法保证了进度的客观性。当前端检测到执行率 $\text{FundRate}$ 显著低于 $\text{TimeProgress}$ 时，系统会自动触发“执行滞后”预警，如图\ref{fig:execution_compare}所示，为管理人员提供深度的干预参考。
 
-%此处需要一张“经费执行与进度对比”的重叠条形图截图
-%建议操作：截图看板中那个带有淡灰色背景柱（时间）和彩色前景柱（经费）的对比图，命名为 execution_compare.png
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth,totalheight=0.35\textheight,keepaspectratio]{figures/execution_compare.png}
+    \includegraphics[width=1.0\textwidth,totalheight=0.4\textheight,keepaspectratio]{figures/execution_compare.png}
     \caption{经费执行率与自然时间进度的双维度对比分析图}
     \label{fig:execution_compare}
 \end{figure}
@@ -192,8 +194,8 @@ if (!last3Months.isEmpty()) {
 
 \section{可视化仪表盘的前端集成}
 
-\subsection{ECharts 动态数据绑定设计}
-在前端 \texttt{DashboardView.vue} 中，系统通过响应式配置项（Options）实现了数据看板的实时渲染。特别是“经费执行率与时间进度”的对比图，采用了重叠条形图设计。
+\subsection*{ECharts 动态数据绑定设计}
+在前端 \texttt{DashboardView.vue} 中，系统通过响应式配置项（Options）实现了数据看板的实时渲染。特别是“月度支出趋势与预测”的逻辑呈现如图\ref{fig:trend_forecast}所示。还有“经费执行率与时间进度”的对比图，采用了重叠条形图设计。
 
 \begin{lstlisting}[language=Java, caption={ECharts 双维度对比图绑定配置}]
 // 利用负间隔 barGap 实现经费填充背景进度条的效果
@@ -218,21 +220,22 @@ series: [
 
 %此处需要一张“月度支出趋势与预测”的图表截图
 %建议操作：查看看板底部的折线图，包含虚线预测部分，截图命名为 trend_forecast.png
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/trend_forecast.png}
+    \includegraphics[width=1.0\textwidth,totalheight=0.35\textheight,keepaspectratio]{figures/trend_forecast.png}
     \caption{月度支出趋势与未来月份预测可视化}
     \label{fig:trend_forecast}
 \end{figure}
 
 %此处需要一张“经费分类占比-饼图”的截图
 %建议操作：截取看板中的“分类支出占比”饼图，命名为 category_share_pie.png
-\begin{figure}[htbp]
+此外，为了揭示支出构成的合理性，系统同步集成了经费科目占比分析饼图，如图\ref{fig:category_share_pie}所示。
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth,totalheight=0.3\textheight,keepaspectratio]{figures/category_share_pie.png}
+    \includegraphics[width=0.7\textwidth,totalheight=0.35\textheight,keepaspectratio]{figures/category_share_pie.png}
     \caption{多维度经费支出占比决策分析}
     \label{fig:category_share_pie}
 \end{figure}
 
 \section{本章小结}
-本章详细讨论了科研经费管理系统的核心代码实现与可视化集成工作。通过后端基于 Spring Boot 的服务编排和前端基于 ECharts 的数据驱动，本研究成功构建了从底层数据采集、多维风险扫描到顶层决策展示的完整工程路径。特别是在“拦截机制”与“智能助手预警模型”上的具体落地，证明了该系统在高校财务数字化转型实践中的可行性。
+本章讨论了科研经费管理系统的核心代码实现与可视化集成工作。通过后端基于 Spring Boot 的服务编排和前端基于 ECharts 的数据驱动，构建了从底层数据采集、多维风险扫描到顶层决策展示的完整工程路径。特别是“拦截机制”与“智能助手预警模型”，验证了该系统在高校财务数字化转型实践中的可行性。

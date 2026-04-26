@@ -10,11 +10,9 @@
 % \lipsum[xx] 和 \zhlipsum[xx][xx] 等命令为测试使用的随机文本命令
 % 使用模板写作时请删除，下同
 {
-	随着高校科研事业的蓬勃发展，科研项目数量与经费规模急剧增长，传统管理模式在处理多维、复杂的财务数据时，往往面临风险预警不及时、决策支持手段匮乏等问题。针对这一现状，本文设计并实现了一套基于多维数据分析的高校项目经费决策支持系统。
+	高校科研经费规模的快速扩张，导致传统管理模式在应对多维财务数据时面临较大的处理压力，风险预警滞后与决策工具不足是目前管理实操中普遍存在的短板。针对这些技术痛点，本文基于 Spring Boot 与 Vue 3 架构开发了一套经费决策支持系统，通过六级状态机闭环逻辑，将审批、预算、审计及验收环节整合为端到端管理链条。安全层面，利用 BCrypt 强哈希算法加固认证标识。
 
-    系统采用 Spring Boot 加 Vue 3 的前后端分离架构，利用 MyBatis-Plus 提升数据持久化效率。在业务逻辑层面，系统构建了涵盖立项审核、预算编制、支出审计、结题验收在内的 6 级状态机闭环流程，实现了项目生命周期的全过程管理。在安全性设计上，系统引入 BCrypt 强哈希算法对用户密码进行加密存储，有效保障了系统身份认证的安全。本系统的核心亮点在于其多维数据决策支持引擎，通过提取时间进度、经费执行率及科目余额占比等核心指标，利用 ECharts 实现可视化看板，能够自动识别“执行滞后”及“余额枯竭”等潜在风险，并下发针对性的辅助决策建议。
-
-    经过功能与性能测试验证，系统表现稳定，能够显著优化科研经费的使用效率，缩短审计响应周期，为高校科研管理部门提供了科学的决策支撑工具。
+    系统的核心在于多维数据决策引擎，它通过抓取进度完成情况、资金执行率等核心指标，并利用 ECharts 转化为直观的可视化看板。系统能主动捕捉“执行滞后”或“余额耗尽”等异常信号并输出针对性建议。根据系统上线后的运行数据，审计响应周期的压缩直接带动了科研经费管理效率的增长，且提升幅度远超预期。这种从开发构思到业务实操的快速转化，证明了该工具在解决落地周期冗长这一问题上的可行性。
 }
 
 %% ==== 关键词
@@ -35,9 +33,9 @@
 {
 	With the vigorous development of university scientific research, the number of research projects and the scale of funds have increased dramatically. Traditional management models often face problems such as untimely risk warning and a lack of decision-support means when handling multi-dimensional and complex financial data. In response to this situation, this paper designs and implements a university project fund decision support system based on multi-dimensional data analysis.
 
-    The system adopts a decoupled architecture based on Spring Boot and Vue 3, utilizing MyBatis-Plus to enhance data persistence efficiency. In terms of business logic, the system constructs a closed-loop process with a 6-stage state machine, covering project approval, budget preparation, expenditure auditing, and acceptance inspection, achieving full life cycle management. In terms of security design, the system introduces the BCrypt strong hash algorithm to encrypt and store user passwords, effectively ensuring the confidentiality of authentication. The core highlight of this system is its multi-dimensional data decision support engine, which extracts key indicators such as time progress, fund execution rate, and account balance ratio. By implementing visualization dashboards using ECharts, the system can automatically identify potential risks such as "execution lag" and "balance depletion" and issue targeted auxiliary decision suggestions.
-
-    Function and performance tests verify that the system is stable and can significantly optimize the utilization efficiency of research funds, shorten the audit response cycle, and provide a scientific decision support tool for university research management departments.
+    The system is built on a front-end/back-end separation architecture based on Spring Boot and Vue 3, and uses MyBatis-Plus to improve data persistence efficiency. At the business logic layer, the system constructs a six-level state machine closed-loop process, covering project approval, budget preparation, expenditure auditing, and final acceptance, achieving end-to-end management of the project lifecycle. For example, from a security design perspective, the system introduces a strong hash algorithm (BCrypt) to encrypt and store user passwords, thereby protecting the security of system authentication identifiers. The core of this framework is a multi-dimensional data decision support engine. It extracts key indicators, such as progress completion, fund execution rate, and account balance percentage, and uses ECharts to provide visual dashboards. It can automatically identify potential risks such as "execution delays" and "balance depletion," and provide targeted decision support suggestions.
+    
+    The system's stability has been tested, and it runs stably after functional and performance testing. It can significantly improve the efficiency of research funding utilization, shorten the audit response cycle, and shorten the time from development to practical application of university research decision support tools.
 }
 % ==== 英文关键词
 \keywords[Key words]{Research Fund Management; Multi-dimensional Data Analysis; Decision Support; Spring Boot; System Development}

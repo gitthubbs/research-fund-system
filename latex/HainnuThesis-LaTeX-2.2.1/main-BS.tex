@@ -37,17 +37,17 @@
 %% ==== 毕业论文信息输入
 \hainnuset{%
 	% -- 中文信息                        % 论文题目↓↓↓
-	title         = {基于多维数据分析的高校项目经费决策支持系统的设计与实现},
+	title         = {基于多维数据分析的高校项目经费\\决策支持系统的设计与实现},
 	studentid     = {202224120221},        % 作者学号
 	author        = {林子睿},              % 作者姓名
 	class		  = {2022},
 	department	  = {信息科学技术学院},
-	major		  = {软件工程},
+	major		  = {软件工程(NIIT)},
 	supervisor    = {刘锡铃},              % 指导教师姓名
 	acadetitle    = {},              % 导师学术头衔
 	submitdate    = {2026年4月20日}, % 论文提交日期
 	corresaddr    = {海南师范大学信息科学技术学院，海口 571158},  % 通信地址s
-	type		      = {论文},	%文档类型：论文/设计, 因人而已，请与指导教师确认
+	type		      = {设计},	%文档类型：论文/设计, 因人而已，请与指导教师确认
 	% -- 英文信息                        % 论文题目(英文)↓↓↓
 	etitle        = {Design and Implementation of University Project Fund Decision Support System Based on Multi-dimensional Data Analysis},
 	eauthor       = {Zirui LIN},                % 作者姓名(英文)
@@ -56,7 +56,7 @@
 	ecorresaddr= {School of Information Science and Technology, \\Hainan Normal University, Haikou 571158, P. R. China},
 }
 
-\begin{document}
+	\begin{document}
 	%\include{contents}
 	%%==================================%%
 	%%             封    面             %%
@@ -65,6 +65,7 @@
 	\maketitle
 	\frontmatter
 	
+
 	%%==================================%%
 	%%             目    录             %%
 	%%==================================%%
@@ -74,21 +75,27 @@
 	%%==================================%%
 	%%             摘    要             %%
 	%%==================================%%
+	%% 在摘要前强制加一页空白页
+	\clearpage\mbox{}\thispagestyle{empty}\clearpage
 	\include{chapters/Abstract-BS}
 	\mainmatter
+
+
+
+
 	
 	
 	%%==================================%%
 	%%            正     文            %%
 	%%==================================%%
 	% 标题前的章节序号可以自由输入希望的格式，也可以省略
-	\include{chapters/Introduction}
-	\include{chapters/Technology}
-	\include{chapters/Analysis}
+	\include{chapters/Introduction}      %第1章 绪论
+	\include{chapters/Technology}		 %第2章 相关技术综述
+	\include{chapters/Analysis}			 %第4章 系统需求分析
 	\include{chapters/Design}            %第4章 总体设计
 	\include{chapters/Implementation}    %第5章 核心功能实现
-\include{chapters/Testing}           %第6章 系统测试
-\include{chapters/Conclusion}        %第7章 结论与展望
+	\include{chapters/Testing}           %第6章 系统测试
+	\include{chapters/Conclusion}        %第7章 结论与展望
 
 
 	
@@ -97,7 +104,7 @@
 	%%==================================%%
 	%%             附    录             %%
 	%%==================================%%
-	\include{chapters/Appendices}
+	%\include{chapters/Appendices}
 	
 	%%****************************************
 	%%  参考文献

@@ -64,12 +64,13 @@ public void submitExpenditure(FundExpenditure exp) {
 \begin{table}[htp]
 	\caption{系统主要数据查询接口清单}\label{tab:apis}
 	\centering
-	\begin{tabular}{|l|l|l|}
-		\hline
-		接口路径          & 请求方式   & 功能说明         \\ \hline
-		/api/projects/list   & GET       & 分页获取当前用户管控的项目列表      \\ \hline
-		/api/statistics/summary & GET    & 获取全校/个人经费执行多维统计看板   \\ \hline
-		/api/budget/check      & POST      & 预检报销申请是否符合预算余额要求   \\ \hline
-		/api/risk/tags         & GET       & 根据偏差模型动态生成项目智能风险标签 \\ \hline
+	\zihao{-4}\songti
+	\begin{tabular}{ccc}
+		\toprule
+		接口路径          & 请求方式   & 功能说明         \\ \midrule
+		/api/projects/list   & GET       & 分页获取当前用户管控的项目列表      \\
+		/api/statistics/summary & GET    & 获取全校/个人经费执行多维统计看板   \\
+		/api/budget/check      & POST      & 预检报销申请是否符合预算余额要求   \\
+		/api/risk/tags         & GET       & 根据偏差模型动态生成项目智能风险标签 \\ \bottomrule
 	\end{tabular}
 \end{table}
